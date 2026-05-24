@@ -19,5 +19,10 @@ build/
 *.keystore
 !debug.keystore
 
+# Release signing — NEVER commit these
+keystore.properties
+keystore/
+*.jks
+
 # Kotlin
 .kotlin/
