@@ -11,6 +11,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -37,6 +39,11 @@ fun LineChart(
             drawLine(lineColor, Offset(x(i), y(values[i])), Offset(x(i + 1), y(values[i + 1])), strokeWidth = 6f)
         }
         values.forEachIndexed { i, v -> drawCircle(lineColor, radius = 7f, center = Offset(x(i), y(v))) }
+        val axisPaint = android.graphics.Paint().apply {
+            color = android.graphics.Color.GRAY; textSize = 24f; isAntiAlias = true
+        }
+        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", maxV), 4f, y(maxV) + 8f, axisPaint)
+        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", minV), 4f, y(minV) + 8f, axisPaint)
     }
 }
 
@@ -56,6 +63,14 @@ fun BarChart(
             val bh = (h - 2 * pad) * (v.toFloat() / maxV)
             val left = pad + i * slot + (slot - barW) / 2
             drawRect(barColor, topLeft = Offset(left, h - pad - bh), size = androidx.compose.ui.geometry.Size(barW, bh))
+        }
+        val labelPaint = android.graphics.Paint().apply {
+            color = android.graphics.Color.DKGRAY; textSize = 28f; textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+        values.forEachIndexed { i, v ->
+            val cx = pad + i * slot + slot / 2
+            drawContext.canvas.nativeCanvas.drawText("$v", cx, h - pad - (h - 2 * pad) * (v.toFloat() / maxV) - 10f, labelPaint)
         }
     }
 }
