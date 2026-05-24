@@ -28,5 +28,9 @@ class LogViewModel @Inject constructor(
     fun toggleSymptom(s: String) = _state.update {
         it.copy(symptoms = if (s in it.symptoms) it.symptoms - s else it.symptoms + s)
     }
+    fun setEnergy(energy: Energy) { _state.update { it.copy(energy = energy) } }
+    fun setBbt(bbt: Double?) { _state.update { it.copy(bbt = bbt) } }
+    fun setCervicalMucus(cm: CervicalMucus) { _state.update { it.copy(cervicalMucus = cm) } }
+    fun setLhResult(lh: LhResult) { _state.update { it.copy(lhResult = lh) } }
     fun save() { viewModelScope.launch { repository.save(_state.value) } }
 }
