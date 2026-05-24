@@ -228,6 +228,13 @@ review, manual updates by the author. This enables the discreet-icon feature and
 - Delightful but tasteful: friendly emoji/illustrations, gentle milestone celebrations.
 - Accessible: readable contrast in every theme, large tap targets, optional larger text.
 
+**UI design principles** (full detail + competitor analysis in
+`2026-05-24-design-inspiration.md`): companion-not-clinical voice; an original **cycle-ring
+hero** (circular day/phase dial) on Today (Phase 2); **progressive disclosure** (simple log by
+default, expand for clinical fields); **icon-first logging** in quick tabs; education woven in;
+**privacy shown as a visible feature**; dashboard hierarchy (today + next events on top,
+insights below). Inspiration only — every screen is original work, no copying.
+
 ---
 
 ## 16. Future / Out of Scope (for now)
