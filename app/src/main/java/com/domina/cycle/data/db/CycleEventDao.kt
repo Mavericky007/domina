@@ -12,4 +12,10 @@ interface CycleEventDao {
 
     @Query("SELECT * FROM cycle_events ORDER BY date")
     fun observeAll(): Flow<List<CycleEventEntity>>
+
+    @Query("SELECT * FROM cycle_events")
+    suspend fun getAll(): List<CycleEventEntity>
+
+    @Query("DELETE FROM cycle_events")
+    suspend fun clearAll()
 }

@@ -9,4 +9,10 @@ interface AppointmentDao {
     @Insert suspend fun insert(entity: AppointmentEntity): Long
     @Query("SELECT * FROM appointments ORDER BY atEpochMillis") fun observeAll(): Flow<List<AppointmentEntity>>
     @Query("DELETE FROM appointments WHERE id = :id") suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM appointments")
+    suspend fun getAll(): List<AppointmentEntity>
+
+    @Query("DELETE FROM appointments")
+    suspend fun clearAll()
 }

@@ -9,4 +9,10 @@ interface MedicationDao {
     @Insert suspend fun insert(entity: MedicationEntity): Long
     @Query("SELECT * FROM medications ORDER BY timeMinutes") fun observeAll(): Flow<List<MedicationEntity>>
     @Query("DELETE FROM medications WHERE id = :id") suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM medications")
+    suspend fun getAll(): List<MedicationEntity>
+
+    @Query("DELETE FROM medications")
+    suspend fun clearAll()
 }

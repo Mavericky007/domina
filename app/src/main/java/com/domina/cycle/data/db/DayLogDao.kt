@@ -17,4 +17,10 @@ interface DayLogDao {
 
     @Query("SELECT * FROM day_logs WHERE date BETWEEN :start AND :end ORDER BY date")
     fun observeRange(start: String, end: String): Flow<List<DayLogEntity>>
+
+    @Query("SELECT * FROM day_logs")
+    suspend fun getAll(): List<DayLogEntity>
+
+    @Query("DELETE FROM day_logs")
+    suspend fun clearAll()
 }
