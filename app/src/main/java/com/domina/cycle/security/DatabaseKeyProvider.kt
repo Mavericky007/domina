@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import java.security.GeneralSecurityException
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -20,9 +21,19 @@ class DatabaseKeyProvider(private val context: Context) {
     private val prefs = context.getSharedPreferences("secure_db", Context.MODE_PRIVATE)
 
     fun getOrCreatePassphrase(): ByteArray {
-        prefs.getString(KEY_CIPHERTEXT, null)?.let { stored ->
-            val iv = Base64.decode(prefs.getString(KEY_IV, null), Base64.NO_WRAP)
-            return decrypt(Base64.decode(stored, Base64.NO_WRAP), iv)
+        val storedCt = prefs.getString(KEY_CIPHERTEXT, null)
+        val storedIv = prefs.getString(KEY_IV, null)
+        if (storedCt != null && storedIv != null) {
+            try {
+                return decrypt(
+                    Base64.decode(storedCt, Base64.NO_WRAP),
+                    Base64.decode(storedIv, Base64.NO_WRAP),
+                )
+            } catch (e: GeneralSecurityException) {
+                // Corrupt sealed state — fall through and re-provision.
+            } catch (e: IllegalArgumentException) {
+                // Malformed stored Base64 — fall through and re-provision.
+            }
         }
         val passphrase = ByteArray(32).also { java.security.SecureRandom().nextBytes(it) }
         val (cipherText, iv) = encrypt(passphrase)

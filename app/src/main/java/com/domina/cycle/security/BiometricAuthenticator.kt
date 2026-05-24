@@ -11,7 +11,7 @@ class BiometricAuthenticator(private val activity: FragmentActivity) {
 
     fun isAvailable(): Boolean =
         BiometricManager.from(activity).canAuthenticate(
-            BiometricManager.Authenticators.BIOMETRIC_WEAK
+            BiometricManager.Authenticators.BIOMETRIC_STRONG
         ) == BiometricManager.BIOMETRIC_SUCCESS
 
     suspend fun authenticate(): Boolean = suspendCancellableCoroutine { cont ->
@@ -32,7 +32,7 @@ class BiometricAuthenticator(private val activity: FragmentActivity) {
                 .setTitle("Unlock")
                 .setSubtitle("Confirm it's you")
                 .setNegativeButtonText("Use PIN")
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
                 .build()
         )
     }
