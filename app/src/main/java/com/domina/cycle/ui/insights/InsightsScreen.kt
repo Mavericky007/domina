@@ -19,7 +19,7 @@ fun InsightsScreen(vm: InsightsViewModel = hiltViewModel()) {
 
         Spacer(Modifier.height(12.dp))
         SectionCard("Cycle length history") {
-            BarChart(values = s.cycleLengths)
+            BarChart(values = s.cycleLengths, xLabels = s.cycleLabels)
             if (s.cycleLengths.isNotEmpty()) {
                 Text("Average ${s.averageCycle} days · ${s.shortest}–${s.longest} day range",
                     style = MaterialTheme.typography.bodyMedium)
@@ -27,14 +27,14 @@ fun InsightsScreen(vm: InsightsViewModel = hiltViewModel()) {
         }
 
         SectionCard("Basal body temperature") {
-            LineChart(values = s.bbtSeries, coverline = s.coverline)
+            LineChart(values = s.bbtSeries, coverline = s.coverline, xLabels = s.bbtLabels)
             if (s.coverline != null) {
                 Text("Coverline detected — a temperature shift suggests ovulation has passed.",
                     style = MaterialTheme.typography.bodySmall)
             }
         }
 
-        SectionCard("Weight") { LineChart(values = s.weightSeries) }
+        SectionCard("Weight") { LineChart(values = s.weightSeries, xLabels = s.weightLabels) }
 
         SectionCard("Patterns") {
             if (s.insights.isEmpty()) Text("Keep logging and I'll spot patterns for you 💛",

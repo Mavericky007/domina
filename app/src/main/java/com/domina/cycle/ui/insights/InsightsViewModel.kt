@@ -22,9 +22,12 @@ data class InsightsUiState(
     val averageCycle: Int,
     val shortest: Int,
     val longest: Int,
+    val cycleLabels: List<String>,
     val bbtSeries: List<Float>,
+    val bbtLabels: List<String>,
     val coverline: Float?,
     val weightSeries: List<Float>,
+    val weightLabels: List<String>,
     val insights: List<String>,
 )
 
@@ -47,16 +50,23 @@ class InsightsViewModel @Inject constructor(
             val periods = PeriodDeriver.derive(logs.filter { it.flow != FlowIntensity.NONE }.map { it.date })
             val history = CycleHistoryStats.compute(periods)
             val avgCycle = if (history.average > 0) history.average else CyclePredictor.DEFAULT_CYCLE_LENGTH
-            val bbt = logs.filter { it.bbt != null }.sortedBy { it.date }.map { it.bbt!! }
-            val cover = BbtAnalysis.detectCoverline(bbt)
+            val monthFmt = java.time.format.DateTimeFormatter.ofPattern("MMM")
+            val dayFmt = java.time.format.DateTimeFormatter.ofPattern("M/d")
+            val starts = periods.sortedBy { it.start }.map { it.start }
+            val bbtLogs = logs.filter { it.bbt != null }.sortedBy { it.date }
+            val sortedWeights = weights.sortedBy { it.dateEpochDay }
+            val cover = BbtAnalysis.detectCoverline(bbtLogs.map { it.bbt!! })
             return InsightsUiState(
                 cycleLengths = history.cycleLengths,
                 averageCycle = history.average,
                 shortest = history.shortest,
                 longest = history.longest,
-                bbtSeries = bbt.map { it.toFloat() },
+                cycleLabels = starts.dropLast(1).map { it.format(monthFmt) },
+                bbtSeries = bbtLogs.map { it.bbt!!.toFloat() },
+                bbtLabels = bbtLogs.map { it.date.format(dayFmt) },
                 coverline = cover.coverline?.toFloat(),
-                weightSeries = weights.sortedBy { it.dateEpochDay }.map { it.weightKg.toFloat() },
+                weightSeries = sortedWeights.map { it.weightKg.toFloat() },
+                weightLabels = sortedWeights.map { java.time.LocalDate.ofEpochDay(it.dateEpochDay).format(dayFmt) },
                 insights = PatternInsights.generate(logs, periods, avgCycle),
             )
         }
