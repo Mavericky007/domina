@@ -1,12 +1,16 @@
 package com.domina.cycle
 
+import android.Manifest
 import android.os.Bundle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.domina.cycle.data.prefs.SettingsRepository
+import com.domina.cycle.reminders.ReminderManager
 import com.domina.cycle.security.BiometricAuthenticator
 import com.domina.cycle.ui.lock.LockScreen
 import com.domina.cycle.ui.lock.LockViewModel
@@ -22,6 +26,7 @@ import androidx.activity.viewModels
 class MainActivity : FragmentActivity() {
 
     @Inject lateinit var settings: SettingsRepository
+    @Inject lateinit var reminderManager: ReminderManager
     private val lockVm: LockViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +39,19 @@ class MainActivity : FragmentActivity() {
             val unlocked by lockVm.unlocked.collectAsStateWithLifecycle()
             var hasPin by remember { mutableStateOf<Boolean?>(null) }
             LaunchedEffect(Unit) { hasPin = settings.pinHash.first() != null }
+
+            // Request POST_NOTIFICATIONS permission on API 33+ once unlocked
+            val notifLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) {}
+            LaunchedEffect(unlocked) {
+                if (unlocked && android.os.Build.VERSION.SDK_INT >= 33) {
+                    notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                if (unlocked) {
+                    lifecycleScope.launch { reminderManager.reschedule() }
+                }
+            }
 
             AppTheme(theme) {
                 if (unlocked) {
