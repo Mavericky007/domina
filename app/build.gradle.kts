@@ -63,6 +63,8 @@ dependencies {
     implementation(libs.work.runtime)
     implementation(libs.hilt.work)
     ksp(libs.hilt.ext.compiler)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
 
     debugImplementation(libs.compose.ui.tooling)
 
