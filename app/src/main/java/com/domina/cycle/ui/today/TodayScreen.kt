@@ -9,7 +9,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun TodayScreen(onLogToday: () -> Unit, vm: TodayViewModel = hiltViewModel()) {
-    val log by vm.log.collectAsState()
+    val state by vm.state.collectAsState()
+    val log = state.todayLog
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Hello 💛", style = MaterialTheme.typography.headlineMedium)
         Text("Today: ${vm.today}", style = MaterialTheme.typography.bodyLarge)
@@ -17,7 +18,7 @@ fun TodayScreen(onLogToday: () -> Unit, vm: TodayViewModel = hiltViewModel()) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 Text("Today's log", style = MaterialTheme.typography.titleMedium)
-                Text(if (log == null || log!!.isEmpty()) "Nothing logged yet" else "Mood: ${log!!.mood ?: "—"} · Flow: ${log!!.flow}")
+                Text(if (log == null || log.isEmpty()) "Nothing logged yet" else "Mood: ${log.mood ?: "—"} · Flow: ${log.flow}")
             }
         }
         Spacer(Modifier.height(16.dp))
