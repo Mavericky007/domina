@@ -17,11 +17,18 @@ class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val themeKey = stringPreferencesKey("theme")
+    private val pinKey = stringPreferencesKey("pin_hash")
 
     val theme: Flow<ThemePreference> =
         context.dataStore.data.map { ThemePreference.fromKey(it[themeKey]) }
 
     suspend fun setTheme(theme: ThemePreference) {
         context.dataStore.edit { it[themeKey] = theme.key }
+    }
+
+    val pinHash: Flow<String?> = context.dataStore.data.map { it[pinKey] }
+
+    suspend fun setPinHash(hash: String) {
+        context.dataStore.edit { it[pinKey] = hash }
     }
 }
