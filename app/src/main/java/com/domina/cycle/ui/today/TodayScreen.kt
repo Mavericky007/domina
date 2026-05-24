@@ -37,7 +37,17 @@ fun TodayScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Hello 💛", style = MaterialTheme.typography.headlineMedium)
+        val greeting = when (java.time.LocalTime.now().hour) {
+            in 5..11 -> "Good morning"; in 12..17 -> "Good afternoon"; else -> "Good evening"
+        }
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("$greeting 💛", style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold)
+            Text(
+                state.today.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d")),
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Spacer(Modifier.height(16.dp))
 
         val preg = pregnancy
