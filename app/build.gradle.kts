@@ -60,6 +60,9 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.biometric)
     implementation(libs.coroutines.android)
+    implementation(libs.work.runtime)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.ext.compiler)
 
     debugImplementation(libs.compose.ui.tooling)
 
