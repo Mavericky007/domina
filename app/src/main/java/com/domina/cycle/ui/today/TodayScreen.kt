@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun TodayScreen(onLogToday: () -> Unit, vm: TodayViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val pregnancy by vm.pregnancy.collectAsStateWithLifecycle()
     val p = state.prediction
 
     Column(
@@ -32,38 +33,43 @@ fun TodayScreen(onLogToday: () -> Unit, vm: TodayViewModel = hiltViewModel()) {
         Text("Hello 💛", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(16.dp))
 
-        CycleRing(
-            cycleDay = p.cycleDay,
-            cycleLength = p.averageCycleLength,
-            periodLength = p.averagePeriodLength,
-            phase = p.phase,
-            phaseLabel = state.guidance?.title?.substringAfter(' ')?.substringBefore(" —") ?: "Let's begin",
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        if (p.confidence == Confidence.NONE) {
-            Text(
-                "Log a few periods and I'll start predicting your cycle & phases 💛",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+        val preg = pregnancy
+        if (preg != null) {
+            PregnancyDashboard(preg)
         } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                p.nextPeriodDate?.let { ChipInfo("🩸 Period", daysLabel(state.today, it)) }
-                p.fertileWindowStart?.let { ChipInfo("🌸 Fertile", daysLabel(state.today, it)) }
-            }
-            if (p.confidence == Confidence.LOW) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "Still learning your rhythm — predictions get sharper as you log.",
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-        }
+            CycleRing(
+                cycleDay = p.cycleDay,
+                cycleLength = p.averageCycleLength,
+                periodLength = p.averagePeriodLength,
+                phase = p.phase,
+                phaseLabel = state.guidance?.title?.substringAfter(' ')?.substringBefore(" —") ?: "Let's begin",
+            )
 
-        state.guidance?.let { g ->
-            Spacer(Modifier.height(16.dp))
-            GuidanceCard(g)
+            Spacer(Modifier.height(12.dp))
+
+            if (p.confidence == Confidence.NONE) {
+                Text(
+                    "Log a few periods and I'll start predicting your cycle & phases 💛",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    p.nextPeriodDate?.let { ChipInfo("🩸 Period", daysLabel(state.today, it)) }
+                    p.fertileWindowStart?.let { ChipInfo("🌸 Fertile", daysLabel(state.today, it)) }
+                }
+                if (p.confidence == Confidence.LOW) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Still learning your rhythm — predictions get sharper as you log.",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+
+            state.guidance?.let { g ->
+                Spacer(Modifier.height(16.dp))
+                GuidanceCard(g)
+            }
         }
 
         Spacer(Modifier.height(20.dp))

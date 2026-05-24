@@ -4,15 +4,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.domina.cycle.data.model.DayLog
 import com.domina.cycle.data.model.FlowIntensity
+import com.domina.cycle.data.prefs.SettingsRepository
 import com.domina.cycle.data.repository.DayLogRepository
 import com.domina.cycle.domain.guidance.PhaseGuidance
 import com.domina.cycle.domain.guidance.PhaseGuide
 import com.domina.cycle.domain.prediction.CyclePrediction
 import com.domina.cycle.domain.prediction.CyclePredictor
 import com.domina.cycle.domain.prediction.PeriodDeriver
+import com.domina.cycle.domain.pregnancy.AppMode
+import com.domina.cycle.domain.pregnancy.PregnancyCalculator
+import com.domina.cycle.domain.pregnancy.PregnancyProgress
+import com.domina.cycle.domain.pregnancy.PregnancyWeek
+import com.domina.cycle.domain.pregnancy.PregnancyWeeks
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
@@ -34,9 +41,15 @@ data class TodayUiState(
     }
 }
 
+data class PregnancyUiState(
+    val progress: PregnancyProgress,
+    val week: PregnancyWeek,
+)
+
 @HiltViewModel
 class TodayViewModel @Inject constructor(
     repository: DayLogRepository,
+    settings: SettingsRepository,
 ) : ViewModel() {
     val today: LocalDate = LocalDate.now()
 
@@ -44,6 +57,11 @@ class TodayViewModel @Inject constructor(
         repository.observeRange(today.minusDays(LOOKBACK_DAYS), today)
             .map { logs -> buildState(logs, today) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState.empty(today))
+
+    val pregnancy: StateFlow<PregnancyUiState?> =
+        combine(settings.appMode, settings.dueDate) { mode, due ->
+            buildPregnancyState(mode, due, LocalDate.now())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     companion object {
         private const val LOOKBACK_DAYS = 400L
@@ -56,6 +74,13 @@ class TodayViewModel @Inject constructor(
             val guidance = prediction.phase?.let { PhaseGuide.forPhase(it) }
             val todayLog = logs.firstOrNull { it.date == today }
             return TodayUiState(today, prediction, guidance, todayLog)
+        }
+
+        fun buildPregnancyState(mode: AppMode, dueDate: LocalDate?, today: LocalDate): PregnancyUiState? {
+            if (mode != AppMode.PREGNANCY || dueDate == null) return null
+            val progress = PregnancyCalculator.progress(dueDate, today)
+            val week = PregnancyWeeks.forWeek(progress.weeksCompleted)
+            return PregnancyUiState(progress, week)
         }
     }
 }

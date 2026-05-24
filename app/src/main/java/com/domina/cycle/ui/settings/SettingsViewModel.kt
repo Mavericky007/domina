@@ -21,9 +21,18 @@ class SettingsViewModel @Inject constructor(
     val reminders: StateFlow<ReminderSettings> =
         settings.reminderSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReminderSettings())
 
+    val mode: StateFlow<com.domina.cycle.domain.pregnancy.AppMode> =
+        settings.appMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
+            com.domina.cycle.domain.pregnancy.AppMode.CYCLE)
+    val dueDate: StateFlow<java.time.LocalDate?> =
+        settings.dueDate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     fun setTheme(t: ThemePreference) { viewModelScope.launch { settings.setTheme(t) } }
 
     fun updateReminders(s: ReminderSettings) {
         viewModelScope.launch { settings.setReminderSettings(s); reminderManager.reschedule() }
     }
+
+    fun setMode(m: com.domina.cycle.domain.pregnancy.AppMode) { viewModelScope.launch { settings.setAppMode(m) } }
+    fun setDueDate(date: java.time.LocalDate?) { viewModelScope.launch { settings.setDueDate(date) } }
 }
