@@ -1,16 +1,21 @@
 package com.domina.cycle.ui.settings
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -24,6 +29,20 @@ fun SettingsScreen(
 ) {
     val theme by vm.theme.collectAsStateWithLifecycle()
     val rem by vm.reminders.collectAsStateWithLifecycle()
+
+    var pendingUri by remember { mutableStateOf<Uri?>(null) }
+    var backupMode by remember { mutableStateOf("") } // "backup" or "restore"
+    var passphrase by remember { mutableStateOf("") }
+    val message by vm.message.collectAsStateWithLifecycle()
+
+    val createDoc = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri -> if (uri != null) { pendingUri = uri; backupMode = "backup" } }
+
+    val openDoc = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) { pendingUri = uri; backupMode = "restore" } }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text("Theme", style = MaterialTheme.typography.titleMedium)
         ThemePreference.entries.forEach { t ->
@@ -72,6 +91,53 @@ fun SettingsScreen(
             headlineContent = { Text("Manage appointments") },
             supportingContent = { Text("Add appointment reminders (24h before)") },
             trailingContent = { TextButton(onClick = onOpenAppointments) { Text("Open") } },
+        )
+        Spacer(Modifier.height(16.dp))
+        Text("Backup & restore", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Your data stays on your phone. A backup is an encrypted file you save wherever you like.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = { createDoc.launch("domina-backup.dom") }) { Text("Back up (encrypted)") }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = { openDoc.launch(arrayOf("application/octet-stream", "*/*")) }) {
+            Text("Restore from backup")
+        }
+        message?.let { msg ->
+            LaunchedEffect(msg) {}
+            Spacer(Modifier.height(8.dp))
+            Text(msg, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+
+    if (pendingUri != null) {
+        AlertDialog(
+            onDismissRequest = { pendingUri = null; passphrase = "" },
+            title = { Text(if (backupMode == "backup") "Choose a passphrase" else "Enter your passphrase") },
+            text = {
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text("Passphrase") },
+                    visualTransformation = PasswordVisualTransformation(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = passphrase.length >= 4,
+                    onClick = {
+                        val u = pendingUri!!
+                        val p = passphrase
+                        if (backupMode == "backup") vm.backupTo(u, p) else vm.restoreFrom(u, p)
+                        pendingUri = null
+                        passphrase = ""
+                    },
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingUri = null; passphrase = "" }) { Text("Cancel") }
+            },
         )
     }
 }
