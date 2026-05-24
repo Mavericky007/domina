@@ -14,6 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Domina">
         <receiver android:name=".reminders.ReminderReceiver" android:exported="false" />
+        <receiver android:name=".reminders.ItemReminderReceiver" android:exported="false" />
 
         <receiver android:name=".reminders.BootReceiver" android:exported="true">
             <intent-filter>

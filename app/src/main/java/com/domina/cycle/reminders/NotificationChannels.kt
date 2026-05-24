@@ -10,6 +10,7 @@ object NotificationChannels {
     const val CYCLE = "cycle_alerts"
     const val FERTILITY = "fertility_alerts"
     const val NUDGE = "daily_nudge"
+    const val MEDS = "meds_appointments"
 
     fun channelFor(type: ReminderType): String = when (type) {
         ReminderType.PERIOD_SOON, ReminderType.PERIOD_TODAY, ReminderType.PERIOD_LATE -> CYCLE
@@ -23,6 +24,7 @@ object NotificationChannels {
             Triple(CYCLE, "Cycle & period alerts", NotificationManager.IMPORTANCE_HIGH),
             Triple(FERTILITY, "Fertility alerts", NotificationManager.IMPORTANCE_DEFAULT),
             Triple(NUDGE, "Daily logging nudge", NotificationManager.IMPORTANCE_LOW),
+            Triple(MEDS, "Medications & appointments", NotificationManager.IMPORTANCE_DEFAULT),
         ).forEach { (id, name, importance) ->
             mgr.createNotificationChannel(NotificationChannel(id, name, importance))
         }

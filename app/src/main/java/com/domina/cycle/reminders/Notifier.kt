@@ -27,4 +27,17 @@ class Notifier(private val context: Context) {
             .build()
         NotificationManagerCompat.from(context).notify(type.ordinal, n)
     }
+
+    fun notifyRaw(channelId: String, notificationId: Int, title: String, body: String) {
+        NotificationChannels.ensureCreated(context)
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) return
+        val n = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title).setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH).build()
+        NotificationManagerCompat.from(context).notify(notificationId, n)
+    }
 }
