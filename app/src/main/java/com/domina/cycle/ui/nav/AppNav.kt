@@ -23,24 +23,34 @@ fun AppNav() {
     val nav = rememberNavController()
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
     Scaffold(bottomBar = {
-        NavigationBar {
+        NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+            val navColors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                selectedTextColor = MaterialTheme.colorScheme.primary,
+                indicatorColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             NavigationBarItem(
                 selected = currentRoute == Destinations.TODAY || currentRoute == null,
                 onClick = { nav.navigate(Destinations.TODAY) },
                 icon = { Icon(Icons.Filled.Home, null) },
                 label = { Text("Today") },
+                colors = navColors,
             )
             NavigationBarItem(
                 selected = currentRoute == Destinations.CALENDAR,
                 onClick = { nav.navigate(Destinations.CALENDAR) },
                 icon = { Icon(Icons.Filled.CalendarMonth, null) },
                 label = { Text("Calendar") },
+                colors = navColors,
             )
             NavigationBarItem(
                 selected = currentRoute == Destinations.SETTINGS,
                 onClick = { nav.navigate(Destinations.SETTINGS) },
                 icon = { Icon(Icons.Filled.Settings, null) },
                 label = { Text("Settings") },
+                colors = navColors,
             )
         }
     }) { padding ->
