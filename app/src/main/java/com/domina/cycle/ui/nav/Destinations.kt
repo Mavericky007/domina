@@ -3,6 +3,7 @@ package com.domina.cycle.ui.nav
 object Destinations {
     const val TODAY = "today"
     const val CALENDAR = "calendar"
+    const val INSIGHTS = "insights"
     const val LOG = "log"
     const val SETTINGS = "settings"
     const val MEDS = "meds"

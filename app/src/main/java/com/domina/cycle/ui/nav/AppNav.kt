@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import com.domina.cycle.ui.calendar.CalendarScreen
 import com.domina.cycle.ui.log.LogScreen
 import com.domina.cycle.ui.appointments.AppointmentsScreen
 import com.domina.cycle.ui.meds.MedsScreen
+import com.domina.cycle.ui.insights.InsightsScreen
 import com.domina.cycle.ui.settings.SettingsScreen
 import com.domina.cycle.ui.today.TodayScreen
 import com.domina.cycle.ui.tools.kick.KickCounterScreen
@@ -52,6 +54,13 @@ fun AppNav() {
                 colors = navColors,
             )
             NavigationBarItem(
+                selected = currentRoute == Destinations.INSIGHTS,
+                onClick = { nav.navigate(Destinations.INSIGHTS) },
+                icon = { Icon(Icons.Filled.Insights, null) },
+                label = { Text("Insights") },
+                colors = navColors,
+            )
+            NavigationBarItem(
                 selected = currentRoute == Destinations.SETTINGS,
                 onClick = { nav.navigate(Destinations.SETTINGS) },
                 icon = { Icon(Icons.Filled.Settings, null) },
@@ -71,6 +80,7 @@ fun AppNav() {
                 )
             }
             composable(Destinations.CALENDAR) { CalendarScreen() }
+            composable(Destinations.INSIGHTS) { InsightsScreen() }
             composable(Destinations.LOG) { LogScreen(date = LocalDate.now(), onSaved = { nav.popBackStack() }) }
             composable(Destinations.SETTINGS) {
                 SettingsScreen(
