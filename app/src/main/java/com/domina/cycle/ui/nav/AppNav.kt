@@ -18,6 +18,10 @@ import com.domina.cycle.ui.appointments.AppointmentsScreen
 import com.domina.cycle.ui.meds.MedsScreen
 import com.domina.cycle.ui.settings.SettingsScreen
 import com.domina.cycle.ui.today.TodayScreen
+import com.domina.cycle.ui.tools.kick.KickCounterScreen
+import com.domina.cycle.ui.tools.contractions.ContractionTimerScreen
+import com.domina.cycle.ui.tools.weight.WeightScreen
+import com.domina.cycle.ui.tools.checklist.ChecklistScreen
 import java.time.LocalDate
 
 @Composable
@@ -57,7 +61,15 @@ fun AppNav() {
         }
     }) { padding ->
         NavHost(nav, startDestination = Destinations.TODAY, modifier = Modifier.padding(padding)) {
-            composable(Destinations.TODAY) { TodayScreen(onLogToday = { nav.navigate(Destinations.LOG) }) }
+            composable(Destinations.TODAY) {
+                TodayScreen(
+                    onLogToday = { nav.navigate(Destinations.LOG) },
+                    onOpenKick = { nav.navigate(Destinations.KICK) },
+                    onOpenContractions = { nav.navigate(Destinations.CONTRACTIONS) },
+                    onOpenWeight = { nav.navigate(Destinations.WEIGHT) },
+                    onOpenChecklist = { nav.navigate(Destinations.CHECKLIST) },
+                )
+            }
             composable(Destinations.CALENDAR) { CalendarScreen() }
             composable(Destinations.LOG) { LogScreen(date = LocalDate.now(), onSaved = { nav.popBackStack() }) }
             composable(Destinations.SETTINGS) {
@@ -68,6 +80,10 @@ fun AppNav() {
             }
             composable(Destinations.MEDS) { MedsScreen() }
             composable(Destinations.APPOINTMENTS) { AppointmentsScreen() }
+            composable(Destinations.KICK) { KickCounterScreen() }
+            composable(Destinations.CONTRACTIONS) { ContractionTimerScreen() }
+            composable(Destinations.WEIGHT) { WeightScreen() }
+            composable(Destinations.CHECKLIST) { ChecklistScreen() }
         }
     }
 }

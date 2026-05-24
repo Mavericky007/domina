@@ -18,7 +18,14 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun TodayScreen(onLogToday: () -> Unit, vm: TodayViewModel = hiltViewModel()) {
+fun TodayScreen(
+    onLogToday: () -> Unit,
+    onOpenKick: () -> Unit = {},
+    onOpenContractions: () -> Unit = {},
+    onOpenWeight: () -> Unit = {},
+    onOpenChecklist: () -> Unit = {},
+    vm: TodayViewModel = hiltViewModel(),
+) {
     val state by vm.state.collectAsStateWithLifecycle()
     val pregnancy by vm.pregnancy.collectAsStateWithLifecycle()
     val p = state.prediction
@@ -35,7 +42,13 @@ fun TodayScreen(onLogToday: () -> Unit, vm: TodayViewModel = hiltViewModel()) {
 
         val preg = pregnancy
         if (preg != null) {
-            PregnancyDashboard(preg)
+            PregnancyDashboard(
+                preg,
+                onOpenKick = onOpenKick,
+                onOpenContractions = onOpenContractions,
+                onOpenWeight = onOpenWeight,
+                onOpenChecklist = onOpenChecklist,
+            )
         } else {
             CycleRing(
                 cycleDay = p.cycleDay,

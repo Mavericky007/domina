@@ -10,7 +10,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun PregnancyDashboard(state: PregnancyUiState, modifier: Modifier = Modifier) {
+fun PregnancyDashboard(
+    state: PregnancyUiState,
+    modifier: Modifier = Modifier,
+    onOpenKick: () -> Unit = {},
+    onOpenContractions: () -> Unit = {},
+    onOpenWeight: () -> Unit = {},
+    onOpenChecklist: () -> Unit = {},
+) {
     val w = state.week
     val p = state.progress
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -36,5 +43,23 @@ fun PregnancyDashboard(state: PregnancyUiState, modifier: Modifier = Modifier) {
             else -> "${-p.daysRemaining} days past due — any moment now 💛"
         }
         AssistChip(onClick = {}, label = { Text(countdown) })
+        Spacer(Modifier.height(16.dp))
+        Text("Tools", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(onClick = onOpenKick, modifier = Modifier.weight(1f)) { Text("👶 Kicks") }
+            OutlinedButton(onClick = onOpenContractions, modifier = Modifier.weight(1f)) { Text("⏱️ Contractions") }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(onClick = onOpenWeight, modifier = Modifier.weight(1f)) { Text("⚖️ Weight") }
+            OutlinedButton(onClick = onOpenChecklist, modifier = Modifier.weight(1f)) { Text("✅ Checklists") }
+        }
     }
 }

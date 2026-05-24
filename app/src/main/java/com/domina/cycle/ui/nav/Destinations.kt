@@ -7,4 +7,8 @@ object Destinations {
     const val SETTINGS = "settings"
     const val MEDS = "meds"
     const val APPOINTMENTS = "appointments"
+    const val KICK = "kick"
+    const val CONTRACTIONS = "contractions"
+    const val WEIGHT = "weight"
+    const val CHECKLIST = "checklist"
 }
