@@ -7,12 +7,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -22,28 +23,45 @@ fun LineChart(
     coverline: Float? = null,
     lineColor: Color = MaterialTheme.colorScheme.primary,
     coverlineColor: Color = MaterialTheme.colorScheme.secondary,
+    labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    if (values.size < 2) { Text("Not enough data yet 💛", style = MaterialTheme.typography.bodySmall); return }
+    if (values.size < 2) {
+        Text("Not enough data yet 💛", style = MaterialTheme.typography.bodySmall)
+        return
+    }
     val allVals = values + listOfNotNull(coverline)
-    val minV = allVals.min(); val maxV = allVals.max(); val range = (maxV - minV).takeIf { it > 0f } ?: 1f
+    val minV = allVals.min()
+    val maxV = allVals.max()
+    val range = (maxV - minV).takeIf { it > 0f } ?: 1f
+    val labelArgb = labelColor.toArgb()
     Canvas(modifier = modifier.fillMaxWidth().height(160.dp)) {
-        val w = size.width; val h = size.height; val pad = 8f
-        fun x(i: Int) = pad + (w - 2 * pad) * (i.toFloat() / (values.size - 1))
-        fun y(v: Float) = h - pad - (h - 2 * pad) * ((v - minV) / range)
+        val w = size.width
+        val h = size.height
+        val gutter = 84f      // reserved space on the left for y-axis labels
+        val padTop = 20f
+        val padBottom = 20f
+        val padRight = 12f
+        fun x(i: Int) = gutter + (w - gutter - padRight) * (i.toFloat() / (values.size - 1))
+        fun y(v: Float) = h - padBottom - (h - padTop - padBottom) * ((v - minV) / range)
+
         coverline?.let { cl ->
             val cy = y(cl)
-            drawLine(coverlineColor, Offset(pad, cy), Offset(w - pad, cy), strokeWidth = 3f,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f)))
+            drawLine(
+                coverlineColor, Offset(gutter, cy), Offset(w - padRight, cy), strokeWidth = 3f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f)),
+            )
         }
         for (i in 0 until values.size - 1) {
             drawLine(lineColor, Offset(x(i), y(values[i])), Offset(x(i + 1), y(values[i + 1])), strokeWidth = 6f)
         }
-        values.forEachIndexed { i, v -> drawCircle(lineColor, radius = 7f, center = Offset(x(i), y(v))) }
-        val axisPaint = android.graphics.Paint().apply {
-            color = android.graphics.Color.GRAY; textSize = 24f; isAntiAlias = true
+        values.forEachIndexed { i, v -> drawCircle(lineColor, radius = 6f, center = Offset(x(i), y(v))) }
+
+        // y-axis labels live in the gutter — left-aligned, never clipped, never over the line
+        val paint = android.graphics.Paint().apply {
+            color = labelArgb; textSize = 26f; isAntiAlias = true
         }
-        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", maxV), 4f, y(maxV) + 8f, axisPaint)
-        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", minV), 4f, y(minV) + 8f, axisPaint)
+        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", maxV), 6f, padTop + 9f, paint)
+        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", minV), 6f, h - padBottom + 9f, paint)
     }
 }
 
@@ -52,25 +70,34 @@ fun BarChart(
     values: List<Int>,
     modifier: Modifier = Modifier,
     barColor: Color = MaterialTheme.colorScheme.primary,
+    labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    if (values.isEmpty()) { Text("Not enough data yet 💛", style = MaterialTheme.typography.bodySmall); return }
-    val maxV = (values.max()).coerceAtLeast(1)
+    if (values.isEmpty()) {
+        Text("Not enough data yet 💛", style = MaterialTheme.typography.bodySmall)
+        return
+    }
+    val maxV = values.max().coerceAtLeast(1)
+    val labelArgb = labelColor.toArgb()
     Canvas(modifier = modifier.fillMaxWidth().height(160.dp)) {
-        val w = size.width; val h = size.height; val pad = 8f
+        val w = size.width
+        val h = size.height
+        val pad = 8f
+        val topPad = 34f      // room for the value label above each bar
         val slot = (w - 2 * pad) / values.size
-        val barW = slot * 0.6f
+        val barW = slot * 0.55f
+        val paint = android.graphics.Paint().apply {
+            color = labelArgb; textSize = 30f
+            textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true
+        }
         values.forEachIndexed { i, v ->
-            val bh = (h - 2 * pad) * (v.toFloat() / maxV)
+            val bh = (h - topPad - pad) * (v.toFloat() / maxV)
             val left = pad + i * slot + (slot - barW) / 2
-            drawRect(barColor, topLeft = Offset(left, h - pad - bh), size = androidx.compose.ui.geometry.Size(barW, bh))
-        }
-        val labelPaint = android.graphics.Paint().apply {
-            color = android.graphics.Color.DKGRAY; textSize = 28f; textAlign = android.graphics.Paint.Align.CENTER
-            isAntiAlias = true
-        }
-        values.forEachIndexed { i, v ->
-            val cx = pad + i * slot + slot / 2
-            drawContext.canvas.nativeCanvas.drawText("$v", cx, h - pad - (h - 2 * pad) * (v.toFloat() / maxV) - 10f, labelPaint)
+            val top = h - pad - bh
+            drawRoundRect(
+                barColor, topLeft = Offset(left, top), size = Size(barW, bh),
+                cornerRadius = CornerRadius(10f, 10f),
+            )
+            drawContext.canvas.nativeCanvas.drawText("$v", left + barW / 2, top - 12f, paint)
         }
     }
 }
