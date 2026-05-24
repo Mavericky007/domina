@@ -17,7 +17,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.domina.cycle.data.prefs.ThemePreference
 
 @Composable
-fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onOpenMeds: () -> Unit = {},
+    vm: SettingsViewModel = hiltViewModel(),
+) {
     val theme by vm.theme.collectAsStateWithLifecycle()
     val rem by vm.reminders.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
@@ -55,6 +58,13 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
                 singleLine = true,
             )
         }
+        Spacer(Modifier.height(16.dp))
+        Text("Medications", style = MaterialTheme.typography.titleMedium)
+        ListItem(
+            headlineContent = { Text("Manage medications") },
+            supportingContent = { Text("Add daily medication reminders") },
+            trailingContent = { TextButton(onClick = onOpenMeds) { Text("Open") } },
+        )
     }
 }
 
