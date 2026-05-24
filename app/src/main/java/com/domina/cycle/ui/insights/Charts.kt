@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun LineChart(
@@ -35,13 +36,14 @@ fun LineChart(
     val maxV = allVals.max()
     val range = (maxV - minV).takeIf { it > 0f } ?: 1f
     val labelArgb = labelColor.toArgb()
-    Canvas(modifier = modifier.fillMaxWidth().height(180.dp)) {
+    Canvas(modifier = modifier.fillMaxWidth().height(200.dp)) {
         val w = size.width
         val h = size.height
-        val gutter = 84f
-        val padTop = 20f
-        val padBottom = if (xLabels.isEmpty()) 20f else 46f
-        val padRight = 16f
+        val textPx = 13.sp.toPx()
+        val gutter = 108f
+        val padTop = textPx + 8f
+        val padBottom = if (xLabels.isEmpty()) textPx + 8f else textPx * 2 + 18f
+        val padRight = 18f
         fun x(i: Int) = gutter + (w - gutter - padRight) * (i.toFloat() / (values.size - 1))
         fun y(v: Float) = h - padBottom - (h - padTop - padBottom) * ((v - minV) / range)
 
@@ -55,14 +57,14 @@ fun LineChart(
         for (i in 0 until values.size - 1) {
             drawLine(lineColor, Offset(x(i), y(values[i])), Offset(x(i + 1), y(values[i + 1])), strokeWidth = 6f)
         }
-        values.forEachIndexed { i, v -> drawCircle(lineColor, radius = 6f, center = Offset(x(i), y(v))) }
+        values.forEachIndexed { i, v -> drawCircle(lineColor, radius = 7f, center = Offset(x(i), y(v))) }
 
-        val yPaint = android.graphics.Paint().apply { color = labelArgb; textSize = 26f; isAntiAlias = true }
-        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", maxV), 6f, padTop + 9f, yPaint)
-        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", minV), 6f, y(minV) + 9f, yPaint)
+        val yPaint = android.graphics.Paint().apply { color = labelArgb; textSize = textPx; isAntiAlias = true }
+        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", maxV), 8f, y(maxV) - 6f, yPaint)
+        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", minV), 8f, y(minV) + textPx * 0.9f, yPaint)
 
         if (xLabels.isNotEmpty()) {
-            val xPaint = android.graphics.Paint().apply { color = labelArgb; textSize = 24f; isAntiAlias = true }
+            val xPaint = android.graphics.Paint().apply { color = labelArgb; textSize = textPx; isAntiAlias = true }
             val n = values.size
             listOf(0, n / 2, n - 1).distinct().forEach { i ->
                 if (i < xLabels.size) {
@@ -71,7 +73,7 @@ fun LineChart(
                         n - 1 -> android.graphics.Paint.Align.RIGHT
                         else -> android.graphics.Paint.Align.CENTER
                     }
-                    drawContext.canvas.nativeCanvas.drawText(xLabels[i], x(i), h - 10f, xPaint)
+                    drawContext.canvas.nativeCanvas.drawText(xLabels[i], x(i), h - 12f, xPaint)
                 }
             }
         }
@@ -92,20 +94,22 @@ fun BarChart(
     }
     val maxV = values.max().coerceAtLeast(1)
     val labelArgb = labelColor.toArgb()
-    Canvas(modifier = modifier.fillMaxWidth().height(180.dp)) {
+    Canvas(modifier = modifier.fillMaxWidth().height(200.dp)) {
         val w = size.width
         val h = size.height
-        val pad = 8f
-        val topPad = 34f
-        val botPad = if (xLabels.isEmpty()) 8f else 36f
+        val valuePx = 16.sp.toPx()
+        val xPx = 13.sp.toPx()
+        val pad = 10f
+        val topPad = valuePx + 12f
+        val botPad = if (xLabels.isEmpty()) 10f else xPx + 18f
         val slot = (w - 2 * pad) / values.size
         val barW = slot * 0.55f
         val valuePaint = android.graphics.Paint().apply {
-            color = labelArgb; textSize = 30f
+            color = labelArgb; textSize = valuePx
             textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true
         }
         val xPaint = android.graphics.Paint().apply {
-            color = labelArgb; textSize = 24f
+            color = labelArgb; textSize = xPx
             textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true
         }
         values.forEachIndexed { i, v ->
@@ -115,10 +119,10 @@ fun BarChart(
             val top = h - botPad - bh
             drawRoundRect(
                 barColor, topLeft = Offset(left, top), size = Size(barW, bh),
-                cornerRadius = CornerRadius(10f, 10f),
+                cornerRadius = CornerRadius(12f, 12f),
             )
-            drawContext.canvas.nativeCanvas.drawText("$v", cx, top - 12f, valuePaint)
-            if (i < xLabels.size) drawContext.canvas.nativeCanvas.drawText(xLabels[i], cx, h - 10f, xPaint)
+            drawContext.canvas.nativeCanvas.drawText("$v", cx, top - 14f, valuePaint)
+            if (i < xLabels.size) drawContext.canvas.nativeCanvas.drawText(xLabels[i], cx, h - 12f, xPaint)
         }
     }
 }
