@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.kotlin.ksp)
     alias(libs.plugins.hilt)
 }
 
@@ -49,7 +50,7 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
+    ksp(libs.room.compiler)
     implementation(libs.sqlcipher)
     implementation(libs.sqlite)
     implementation(libs.datastore.preferences)
