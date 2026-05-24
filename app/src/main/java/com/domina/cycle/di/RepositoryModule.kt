@@ -21,4 +21,16 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindAppointmentRepository(impl: RoomAppointmentRepository): AppointmentRepository
+
+    @Binds @Singleton
+    abstract fun bindKickRepository(impl: RoomKickRepository): KickRepository
+
+    @Binds @Singleton
+    abstract fun bindContractionRepository(impl: RoomContractionRepository): ContractionRepository
+
+    @Binds @Singleton
+    abstract fun bindWeightRepository(impl: RoomWeightRepository): WeightRepository
+
+    @Binds @Singleton
+    abstract fun bindChecklistRepository(impl: RoomChecklistRepository): ChecklistRepository
 }

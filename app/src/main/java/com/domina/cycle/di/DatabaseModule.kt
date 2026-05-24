@@ -4,10 +4,15 @@ import android.content.Context
 import androidx.room.Room
 import com.domina.cycle.data.db.AppDatabase
 import com.domina.cycle.data.db.AppointmentDao
+import com.domina.cycle.data.db.ChecklistItemDao
+import com.domina.cycle.data.db.ContractionDao
 import com.domina.cycle.data.db.CycleEventDao
 import com.domina.cycle.data.db.DayLogDao
+import com.domina.cycle.data.db.KickSessionDao
 import com.domina.cycle.data.db.MedicationDao
 import com.domina.cycle.data.db.MIGRATION_1_2
+import com.domina.cycle.data.db.MIGRATION_2_3
+import com.domina.cycle.data.db.WeightEntryDao
 import com.domina.cycle.security.DatabaseKeyProvider
 import dagger.Module
 import dagger.Provides
@@ -27,7 +32,7 @@ object DatabaseModule {
         val passphrase = DatabaseKeyProvider(context).getOrCreatePassphrase()
         return Room.databaseBuilder(context, AppDatabase::class.java, "domina.db")
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
     }
 
@@ -35,4 +40,8 @@ object DatabaseModule {
     @Provides fun provideCycleEventDao(db: AppDatabase): CycleEventDao = db.cycleEventDao()
     @Provides fun provideMedicationDao(db: AppDatabase): MedicationDao = db.medicationDao()
     @Provides fun provideAppointmentDao(db: AppDatabase): AppointmentDao = db.appointmentDao()
+    @Provides fun provideKickSessionDao(db: AppDatabase): KickSessionDao = db.kickSessionDao()
+    @Provides fun provideContractionDao(db: AppDatabase): ContractionDao = db.contractionDao()
+    @Provides fun provideWeightEntryDao(db: AppDatabase): WeightEntryDao = db.weightEntryDao()
+    @Provides fun provideChecklistItemDao(db: AppDatabase): ChecklistItemDao = db.checklistItemDao()
 }
