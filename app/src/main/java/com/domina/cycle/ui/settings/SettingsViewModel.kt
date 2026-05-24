@@ -7,12 +7,16 @@ import androidx.lifecycle.viewModelScope
 import com.domina.cycle.backup.BackupManager
 import com.domina.cycle.data.prefs.SettingsRepository
 import com.domina.cycle.data.prefs.ThemePreference
+import com.domina.cycle.data.repository.DayLogRepository
 import com.domina.cycle.domain.reminders.ReminderSettings
 import com.domina.cycle.reminders.ReminderManager
+import com.domina.cycle.report.ReportContent
+import com.domina.cycle.report.PdfReportRenderer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,6 +24,7 @@ class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val reminderManager: ReminderManager,
     private val backupManager: BackupManager,
+    private val dayLogRepository: DayLogRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
     val theme: StateFlow<ThemePreference> =
@@ -61,6 +66,20 @@ class SettingsViewModel @Inject constructor(
                 context.contentResolver.openInputStream(uri)!!.use { backupManager.import(it, passphrase.toCharArray()) }
             }.onSuccess { _message.value = "Restored. Reopen the app to see everything." }
                 .onFailure { _message.value = "Restore failed — check your passphrase." }
+        }
+    }
+
+    fun exportReport(uri: Uri) {
+        viewModelScope.launch {
+            runCatching {
+                val logs = dayLogRepository.observeRange(
+                    LocalDate.now().minusDays(400),
+                    LocalDate.now()
+                ).first()
+                val report = ReportContent.build(logs)
+                context.contentResolver.openOutputStream(uri)!!.use { PdfReportRenderer.render(report, it) }
+            }.onSuccess { _message.value = "Report saved 💛" }
+                .onFailure { _message.value = "Export failed: ${it.message}" }
         }
     }
 }

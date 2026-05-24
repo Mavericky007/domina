@@ -43,6 +43,10 @@ fun SettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) { pendingUri = uri; backupMode = "restore" } }
 
+    val createPdf = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri -> if (uri != null) vm.exportReport(uri) }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text("Theme", style = MaterialTheme.typography.titleMedium)
         ThemePreference.entries.forEach { t ->
@@ -104,6 +108,9 @@ fun SettingsScreen(
         OutlinedButton(onClick = { openDoc.launch(arrayOf("application/octet-stream", "*/*")) }) {
             Text("Restore from backup")
         }
+        Spacer(Modifier.height(16.dp))
+        Text("Doctor report", style = MaterialTheme.typography.titleMedium)
+        Button(onClick = { createPdf.launch("domina-cycle-report.pdf") }) { Text("Export PDF for my doctor") }
         message?.let { msg ->
             LaunchedEffect(msg) {}
             Spacer(Modifier.height(8.dp))
