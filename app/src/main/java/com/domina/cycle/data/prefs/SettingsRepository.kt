@@ -79,4 +79,9 @@ class SettingsRepository @Inject constructor(
             if (date == null) it.remove(dueDateKey) else it[dueDateKey] = date.toEpochDay()
         }
     }
+
+    // --- discreet icon ---
+    private val discreetKey = booleanPreferencesKey("discreet_icon")
+    val discreetIcon: Flow<Boolean> = context.dataStore.data.map { it[discreetKey] ?: false }
+    suspend fun setDiscreetIcon(enabled: Boolean) { context.dataStore.edit { it[discreetKey] = enabled } }
 }

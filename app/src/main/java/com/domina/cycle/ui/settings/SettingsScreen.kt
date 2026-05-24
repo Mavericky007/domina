@@ -111,6 +111,16 @@ fun SettingsScreen(
         Spacer(Modifier.height(16.dp))
         Text("Doctor report", style = MaterialTheme.typography.titleMedium)
         Button(onClick = { createPdf.launch("domina-cycle-report.pdf") }) { Text("Export PDF for my doctor") }
+        Spacer(Modifier.height(16.dp))
+        Text("Privacy", style = MaterialTheme.typography.titleMedium)
+        val discreet by vm.discreetIcon.collectAsStateWithLifecycle()
+        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Discreet icon")
+                Text("Show on the home screen as \"Notes\"", style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = discreet, onCheckedChange = { vm.setDiscreetIcon(it) })
+        }
         message?.let { msg ->
             LaunchedEffect(msg) {}
             Spacer(Modifier.height(8.dp))

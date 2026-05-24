@@ -38,6 +38,15 @@ class SettingsViewModel @Inject constructor(
     val dueDate: StateFlow<java.time.LocalDate?> =
         settings.dueDate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val discreetIcon: StateFlow<Boolean> =
+        settings.discreetIcon.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    fun setDiscreetIcon(enabled: Boolean) {
+        viewModelScope.launch {
+            settings.setDiscreetIcon(enabled)
+            com.domina.cycle.launcher.DiscreetIconManager(context).setDiscreet(enabled)
+        }
+    }
+
     fun setTheme(t: ThemePreference) { viewModelScope.launch { settings.setTheme(t) } }
 
     fun updateReminders(s: ReminderSettings) {
