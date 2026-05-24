@@ -19,6 +19,7 @@ import com.domina.cycle.data.prefs.ThemePreference
 @Composable
 fun SettingsScreen(
     onOpenMeds: () -> Unit = {},
+    onOpenAppointments: () -> Unit = {},
     vm: SettingsViewModel = hiltViewModel(),
 ) {
     val theme by vm.theme.collectAsStateWithLifecycle()
@@ -64,6 +65,13 @@ fun SettingsScreen(
             headlineContent = { Text("Manage medications") },
             supportingContent = { Text("Add daily medication reminders") },
             trailingContent = { TextButton(onClick = onOpenMeds) { Text("Open") } },
+        )
+        Spacer(Modifier.height(16.dp))
+        Text("Appointments", style = MaterialTheme.typography.titleMedium)
+        ListItem(
+            headlineContent = { Text("Manage appointments") },
+            supportingContent = { Text("Add appointment reminders (24h before)") },
+            trailingContent = { TextButton(onClick = onOpenAppointments) { Text("Open") } },
         )
     }
 }

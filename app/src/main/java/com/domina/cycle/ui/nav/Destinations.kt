@@ -6,4 +6,5 @@ object Destinations {
     const val LOG = "log"
     const val SETTINGS = "settings"
     const val MEDS = "meds"
+    const val APPOINTMENTS = "appointments"
 }

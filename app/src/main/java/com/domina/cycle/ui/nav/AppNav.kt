@@ -14,6 +14,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.domina.cycle.ui.calendar.CalendarScreen
 import com.domina.cycle.ui.log.LogScreen
+import com.domina.cycle.ui.appointments.AppointmentsScreen
 import com.domina.cycle.ui.meds.MedsScreen
 import com.domina.cycle.ui.settings.SettingsScreen
 import com.domina.cycle.ui.today.TodayScreen
@@ -59,8 +60,14 @@ fun AppNav() {
             composable(Destinations.TODAY) { TodayScreen(onLogToday = { nav.navigate(Destinations.LOG) }) }
             composable(Destinations.CALENDAR) { CalendarScreen() }
             composable(Destinations.LOG) { LogScreen(date = LocalDate.now(), onSaved = { nav.popBackStack() }) }
-            composable(Destinations.SETTINGS) { SettingsScreen(onOpenMeds = { nav.navigate(Destinations.MEDS) }) }
+            composable(Destinations.SETTINGS) {
+                SettingsScreen(
+                    onOpenMeds = { nav.navigate(Destinations.MEDS) },
+                    onOpenAppointments = { nav.navigate(Destinations.APPOINTMENTS) },
+                )
+            }
             composable(Destinations.MEDS) { MedsScreen() }
+            composable(Destinations.APPOINTMENTS) { AppointmentsScreen() }
         }
     }
 }
