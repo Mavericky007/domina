@@ -1,6 +1,9 @@
 # Brainstorming visual-companion working files
 .superpowers/
 
+# Git worktrees (isolated workspaces)
+.worktrees/
+
 # Android / Gradle
 *.iml
 .gradle/
