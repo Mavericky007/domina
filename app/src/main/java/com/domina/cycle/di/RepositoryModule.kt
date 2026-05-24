@@ -15,4 +15,10 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindCycleRepository(impl: RoomCycleRepository): CycleRepository
+
+    @Binds @Singleton
+    abstract fun bindMedicationRepository(impl: RoomMedicationRepository): MedicationRepository
+
+    @Binds @Singleton
+    abstract fun bindAppointmentRepository(impl: RoomAppointmentRepository): AppointmentRepository
 }
