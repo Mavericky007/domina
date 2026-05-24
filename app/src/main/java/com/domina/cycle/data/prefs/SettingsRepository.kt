@@ -59,4 +59,24 @@ class SettingsRepository @Inject constructor(
             it[nudgeMinsKey] = ReminderSettingsCodec.timeToMinutes(s.dailyNudgeTime)
         }
     }
+
+    // --- app mode + pregnancy ---
+    private val appModeKey = stringPreferencesKey("app_mode")
+    private val dueDateKey = androidx.datastore.preferences.core.longPreferencesKey("due_date_epoch_day")
+
+    val appMode: Flow<com.domina.cycle.domain.pregnancy.AppMode> =
+        context.dataStore.data.map { com.domina.cycle.domain.pregnancy.AppMode.fromName(it[appModeKey]) }
+
+    val dueDate: Flow<java.time.LocalDate?> =
+        context.dataStore.data.map { p -> p[dueDateKey]?.let { java.time.LocalDate.ofEpochDay(it) } }
+
+    suspend fun setAppMode(mode: com.domina.cycle.domain.pregnancy.AppMode) {
+        context.dataStore.edit { it[appModeKey] = mode.name }
+    }
+
+    suspend fun setDueDate(date: java.time.LocalDate?) {
+        context.dataStore.edit {
+            if (date == null) it.remove(dueDateKey) else it[dueDateKey] = date.toEpochDay()
+        }
+    }
 }
