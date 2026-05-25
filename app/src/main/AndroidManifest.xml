@@ -23,6 +23,8 @@
         <receiver android:name=".reminders.ItemReminderReceiver" android:exported="false" />
         <receiver android:name=".reminders.CheckInReceiver" android:exported="false" />
         <receiver android:name=".reminders.CheckInActionReceiver" android:exported="false" />
+        <receiver android:name=".reminders.PeriodReminderReceiver" android:exported="false" />
+        <receiver android:name=".reminders.PeriodLogActionReceiver" android:exported="false" />
 
         <receiver android:name=".widget.CycleWidgetReceiver" android:exported="false">
             <intent-filter>

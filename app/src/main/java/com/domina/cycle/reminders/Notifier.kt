@@ -93,8 +93,49 @@ class Notifier(private val context: Context) {
         NotificationManagerCompat.from(context).notify(notificationId, n)
     }
 
+    fun notifyPeriodLog(slot: Int) {
+        NotificationChannels.ensureCreated(context)
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) return
+        val notifId = PERIOD_NOTIF_BASE + slot
+        val builder = NotificationCompat.Builder(context, NotificationChannels.CYCLE_LOG)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("How's your flow today?")
+            .setContentText("Tap to log today's period 💛")
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        listOf("LIGHT" to "Light", "MEDIUM" to "Medium", "HEAVY" to "Heavy").forEachIndexed { i, (flow, label) ->
+            val tap = Intent(context, PeriodLogActionReceiver::class.java).apply {
+                putExtra(PeriodLogActionReceiver.EXTRA_FLOW, flow)
+                putExtra(PeriodLogActionReceiver.EXTRA_NOTIF_ID, notifId)
+            }
+            val pi = PendingIntent.getBroadcast(
+                context, PERIOD_ACTION_BASE + slot * 10 + i, tap,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            builder.addAction(0, label, pi)
+        }
+        NotificationManagerCompat.from(context).notify(notifId, builder.build())
+    }
+
+    fun notifyPeriodConfirmation(notifId: Int, message: String) {
+        NotificationChannels.ensureCreated(context)
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) return
+        val n = NotificationCompat.Builder(context, NotificationChannels.CYCLE_LOG)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("Logged 💛").setContentText(message)
+            .setAutoCancel(true).setTimeoutAfter(8_000)
+            .setPriority(NotificationCompat.PRIORITY_LOW).build()
+        NotificationManagerCompat.from(context).notify(notifId, n)
+    }
+
     companion object {
         private const val CHECKIN_NOTIF_BASE = 7_000      // one notification id per slot
         private const val CHECKIN_ACTION_BASE = 910_000   // unique PendingIntent code per (slot, score)
+        private const val PERIOD_NOTIF_BASE = 7_100
+        private const val PERIOD_ACTION_BASE = 920_000
     }
 }

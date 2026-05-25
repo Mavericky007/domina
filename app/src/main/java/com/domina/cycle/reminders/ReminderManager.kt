@@ -41,6 +41,10 @@ class ReminderManager @Inject constructor(
 
         with(CheckInScheduler(context)) { if (settings.checkIns) scheduleAll() else cancelAll() }
 
+        with(PeriodReminderScheduler(context)) {
+            if (settings.periodLogReminders && mode != com.domina.cycle.domain.pregnancy.AppMode.PREGNANCY) scheduleAll() else cancelAll()
+        }
+
         val meds = medicationRepository.observeAll().first().map {
             MedAppointmentScheduler.MedInput(it.id, it.name, it.timeMinutes, it.enabled)
         }
