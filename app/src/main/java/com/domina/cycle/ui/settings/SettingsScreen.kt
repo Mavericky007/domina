@@ -25,10 +25,14 @@ import com.domina.cycle.data.prefs.ThemePreference
 fun SettingsScreen(
     onOpenMeds: () -> Unit = {},
     onOpenAppointments: () -> Unit = {},
+    onEditProfile: () -> Unit = {},
     vm: SettingsViewModel = hiltViewModel(),
 ) {
     val theme by vm.theme.collectAsStateWithLifecycle()
     val rem by vm.reminders.collectAsStateWithLifecycle()
+    val profileName by vm.userName.collectAsStateWithLifecycle()
+    val profileDob by vm.birthDate.collectAsStateWithLifecycle()
+    val profileHeight by vm.heightCm.collectAsStateWithLifecycle()
 
     var pendingUri by remember { mutableStateOf<Uri?>(null) }
     var backupMode by remember { mutableStateOf("") } // "backup" or "restore"
@@ -48,6 +52,27 @@ fun SettingsScreen(
     ) { uri -> if (uri != null) vm.exportReport(uri) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Card(Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (profileName.isNullOrBlank()) "Your profile" else "👋 ${profileName}",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    val bits = buildList {
+                        profileDob?.let { add("${java.time.Period.between(it, java.time.LocalDate.now()).years} yrs") }
+                        profileHeight?.let { add("$it cm") }
+                    }
+                    Text(
+                        if (bits.isEmpty()) "Add your details" else bits.joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onEditProfile) { Text("Edit") }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
         Text("Theme", style = MaterialTheme.typography.titleMedium)
         ThemePreference.entries.forEach { t ->
             Row(verticalAlignment = Alignment.CenterVertically) {

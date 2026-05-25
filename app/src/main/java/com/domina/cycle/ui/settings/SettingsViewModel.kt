@@ -47,6 +47,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    val userName: StateFlow<String?> =
+        settings.userName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val birthDate: StateFlow<LocalDate?> =
+        settings.birthDate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val heightCm: StateFlow<Int?> =
+        settings.heightCm.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     fun setTheme(t: ThemePreference) { viewModelScope.launch { settings.setTheme(t) } }
 
     fun updateReminders(s: ReminderSettings) {

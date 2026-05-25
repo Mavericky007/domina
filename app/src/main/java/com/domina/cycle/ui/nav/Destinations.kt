@@ -12,4 +12,5 @@ object Destinations {
     const val CONTRACTIONS = "contractions"
     const val WEIGHT = "weight"
     const val CHECKLIST = "checklist"
+    const val PROFILE = "profile"
 }

@@ -53,6 +53,9 @@ class TodayViewModel @Inject constructor(
 ) : ViewModel() {
     val today: LocalDate = LocalDate.now()
 
+    val userName: StateFlow<String?> =
+        settings.userName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     val state: StateFlow<TodayUiState> =
         repository.observeRange(today.minusDays(LOOKBACK_DAYS), today)
             .map { logs -> buildState(logs, today) }

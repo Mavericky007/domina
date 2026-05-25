@@ -45,6 +45,8 @@ class MainActivity : FragmentActivity() {
             val unlocked by lockVm.unlocked.collectAsStateWithLifecycle()
             var hasPin by remember { mutableStateOf<Boolean?>(null) }
             LaunchedEffect(Unit) { hasPin = settings.pinHash.first() != null }
+            var onboardingDone by remember { mutableStateOf<Boolean?>(null) }
+            LaunchedEffect(unlocked) { if (unlocked) onboardingDone = settings.onboardingComplete.first() }
 
             // Request POST_NOTIFICATIONS permission on API 33+ once unlocked
             val notifLauncher = rememberLauncherForActivityResult(
@@ -61,7 +63,11 @@ class MainActivity : FragmentActivity() {
 
             AppTheme(theme) {
                 if (unlocked) {
-                    AppNav()
+                    when (onboardingDone) {
+                        false -> com.domina.cycle.ui.onboarding.OnboardingScreen(onDone = { onboardingDone = true })
+                        true -> AppNav()
+                        null -> {}  // brief: reading the flag
+                    }
                 } else {
                     LockScreen(
                         hasPin = hasPin == true,

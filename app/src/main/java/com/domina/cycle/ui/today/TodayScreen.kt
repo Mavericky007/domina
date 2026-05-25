@@ -40,8 +40,10 @@ fun TodayScreen(
         val greeting = when (java.time.LocalTime.now().hour) {
             in 5..11 -> "Good morning"; in 12..17 -> "Good afternoon"; else -> "Good evening"
         }
+        val name by vm.userName.collectAsStateWithLifecycle()
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("$greeting 💛", style = MaterialTheme.typography.headlineSmall,
+            Text(if (name.isNullOrBlank()) "$greeting 💛" else "$greeting, $name 💛",
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold)
             Text(
                 state.today.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d")),

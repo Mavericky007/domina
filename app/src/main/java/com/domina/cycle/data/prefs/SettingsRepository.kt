@@ -84,4 +84,28 @@ class SettingsRepository @Inject constructor(
     private val discreetKey = booleanPreferencesKey("discreet_icon")
     val discreetIcon: Flow<Boolean> = context.dataStore.data.map { it[discreetKey] ?: false }
     suspend fun setDiscreetIcon(enabled: Boolean) { context.dataStore.edit { it[discreetKey] = enabled } }
+
+    // --- user profile + onboarding ---
+    private val nameKey = stringPreferencesKey("profile_name")
+    private val dobKey = androidx.datastore.preferences.core.longPreferencesKey("profile_dob_epoch_day")
+    private val heightKey = intPreferencesKey("profile_height_cm")
+    private val onboardingKey = booleanPreferencesKey("onboarding_complete")
+
+    val userName: Flow<String?> = context.dataStore.data.map { it[nameKey]?.ifBlank { null } }
+    val birthDate: Flow<java.time.LocalDate?> =
+        context.dataStore.data.map { p -> p[dobKey]?.let { java.time.LocalDate.ofEpochDay(it) } }
+    val heightCm: Flow<Int?> = context.dataStore.data.map { it[heightKey] }
+    val onboardingComplete: Flow<Boolean> = context.dataStore.data.map { it[onboardingKey] ?: false }
+
+    suspend fun saveProfile(name: String?, birthDate: java.time.LocalDate?, heightCm: Int?) {
+        context.dataStore.edit { p ->
+            if (name.isNullOrBlank()) p.remove(nameKey) else p[nameKey] = name.trim()
+            if (birthDate == null) p.remove(dobKey) else p[dobKey] = birthDate.toEpochDay()
+            if (heightCm == null) p.remove(heightKey) else p[heightKey] = heightCm
+        }
+    }
+
+    suspend fun setOnboardingComplete(complete: Boolean) {
+        context.dataStore.edit { it[onboardingKey] = complete }
+    }
 }
