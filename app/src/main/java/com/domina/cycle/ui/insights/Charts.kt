@@ -21,8 +21,10 @@ import androidx.compose.ui.unit.sp
 fun LineChart(
     values: List<Float>,
     modifier: Modifier = Modifier,
+    projected: List<Float> = emptyList(),
     coverline: Float? = null,
-    xLabels: List<String> = emptyList(),
+    xLabels: List<String> = emptyList(),   // labels for observed + projected combined
+    decimals: Int = 1,
     lineColor: Color = MaterialTheme.colorScheme.primary,
     coverlineColor: Color = MaterialTheme.colorScheme.secondary,
     labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -31,49 +33,94 @@ fun LineChart(
         Text("Not enough data yet 💛", style = MaterialTheme.typography.bodySmall)
         return
     }
-    val allVals = values + listOfNotNull(coverline)
-    val minV = allVals.min()
-    val maxV = allVals.max()
+    val all = values + projected + listOfNotNull(coverline)
+    val minV = all.min()
+    val maxV = all.max()
     val range = (maxV - minV).takeIf { it > 0f } ?: 1f
+    val total = values.size + projected.size
     val labelArgb = labelColor.toArgb()
-    Canvas(modifier = modifier.fillMaxWidth().height(200.dp)) {
+    val projArgb = lineColor.copy(alpha = 0.5f).toArgb()
+    val projColor = lineColor.copy(alpha = 0.5f)
+    val fmt = "%.${decimals}f"
+
+    Canvas(modifier = modifier.fillMaxWidth().height(210.dp)) {
         val w = size.width
         val h = size.height
-        val textPx = 13.sp.toPx()
-        val gutter = 108f
-        val padTop = textPx + 8f
-        val padBottom = if (xLabels.isEmpty()) textPx + 8f else textPx * 2 + 18f
-        val padRight = 18f
-        fun x(i: Int) = gutter + (w - gutter - padRight) * (i.toFloat() / (values.size - 1))
+        val valPx = 12.sp.toPx()
+        val xPx = 12.sp.toPx()
+        val padL = 14f
+        val padR = 14f
+        val padTop = valPx + 14f
+        val padBottom = (if (xLabels.isEmpty()) 0f else xPx + 14f) + valPx + 12f
+        fun x(i: Int) = padL + (w - padL - padR) * (i.toFloat() / (total - 1).coerceAtLeast(1))
         fun y(v: Float) = h - padBottom - (h - padTop - padBottom) * ((v - minV) / range)
+        fun valAt(i: Int) = if (i < values.size) values[i] else projected[i - values.size]
 
+        // coverline (ovulation reference)
         coverline?.let { cl ->
             val cy = y(cl)
-            drawLine(
-                coverlineColor, Offset(gutter, cy), Offset(w - padRight, cy), strokeWidth = 3f,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f)),
-            )
+            drawLine(coverlineColor, Offset(padL, cy), Offset(w - padR, cy), strokeWidth = 3f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f)))
         }
+
+        // observed line (solid)
         for (i in 0 until values.size - 1) {
             drawLine(lineColor, Offset(x(i), y(values[i])), Offset(x(i + 1), y(values[i + 1])), strokeWidth = 6f)
         }
+        // projected line (dashed), bridged from the last observed point
+        if (projected.isNotEmpty()) {
+            val dash = PathEffect.dashPathEffect(floatArrayOf(14f, 12f))
+            var prev = values.size - 1
+            for (j in projected.indices) {
+                val cur = values.size + j
+                drawLine(projColor, Offset(x(prev), y(valAt(prev))), Offset(x(cur), y(valAt(cur))),
+                    strokeWidth = 5f, pathEffect = dash)
+                prev = cur
+            }
+        }
+
+        // points
         values.forEachIndexed { i, v -> drawCircle(lineColor, radius = 7f, center = Offset(x(i), y(v))) }
+        projected.forEachIndexed { j, v -> drawCircle(projColor, radius = 5f, center = Offset(x(values.size + j), y(v))) }
 
-        val yPaint = android.graphics.Paint().apply { color = labelArgb; textSize = textPx; isAntiAlias = true }
-        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", maxV), 8f, y(maxV) - 6f, yPaint)
-        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", minV), 8f, y(minV) + textPx * 0.9f, yPaint)
+        // per-point value labels — greedy, non-overlapping, placed above peaks / below troughs
+        val vp = android.graphics.Paint().apply {
+            textSize = valPx; textAlign = android.graphics.Paint.Align.CENTER; isAntiAlias = true
+        }
+        var lastAbove = -1e9f; var lastBelow = -1e9f
+        val gap = 10f
+        for (i in 0 until total) {
+            val v = valAt(i)
+            val prev = if (i > 0) valAt(i - 1) else v
+            val next = if (i < total - 1) valAt(i + 1) else v
+            val high = v >= (prev + next) / 2f
+            val cx = x(i)
+            val s = String.format(fmt, v)
+            val tw = vp.measureText(s)
+            val left = cx - tw / 2f; val rightEdge = cx + tw / 2f
+            vp.color = if (i < values.size) labelArgb else projArgb
+            if (high) {
+                if (left > lastAbove + gap) {
+                    drawContext.canvas.nativeCanvas.drawText(s, cx, y(v) - 12f, vp); lastAbove = rightEdge
+                }
+            } else {
+                if (left > lastBelow + gap) {
+                    drawContext.canvas.nativeCanvas.drawText(s, cx, y(v) + valPx + 10f, vp); lastBelow = rightEdge
+                }
+            }
+        }
 
+        // x-axis time labels (start / mid / end across the whole range)
         if (xLabels.isNotEmpty()) {
-            val xPaint = android.graphics.Paint().apply { color = labelArgb; textSize = textPx; isAntiAlias = true }
-            val n = values.size
-            listOf(0, n / 2, n - 1).distinct().forEach { i ->
+            val xp = android.graphics.Paint().apply { color = labelArgb; textSize = xPx; isAntiAlias = true }
+            listOf(0, total / 2, total - 1).distinct().forEach { i ->
                 if (i < xLabels.size) {
-                    xPaint.textAlign = when (i) {
+                    xp.textAlign = when (i) {
                         0 -> android.graphics.Paint.Align.LEFT
-                        n - 1 -> android.graphics.Paint.Align.RIGHT
+                        total - 1 -> android.graphics.Paint.Align.RIGHT
                         else -> android.graphics.Paint.Align.CENTER
                     }
-                    drawContext.canvas.nativeCanvas.drawText(xLabels[i], x(i), h - 12f, xPaint)
+                    drawContext.canvas.nativeCanvas.drawText(xLabels[i], x(i), h - 10f, xp)
                 }
             }
         }

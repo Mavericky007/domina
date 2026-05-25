@@ -27,14 +27,25 @@ fun InsightsScreen(vm: InsightsViewModel = hiltViewModel()) {
         }
 
         SectionCard("Basal body temperature") {
-            LineChart(values = s.bbtSeries, coverline = s.coverline, xLabels = s.bbtLabels)
+            LineChart(values = s.bbtSeries, projected = s.bbtProjected,
+                coverline = s.coverline, xLabels = s.bbtLabels, decimals = 2)
             if (s.coverline != null) {
                 Text("Coverline detected — a temperature shift suggests ovulation has passed.",
                     style = MaterialTheme.typography.bodySmall)
             }
+            if (s.bbtProjected.isNotEmpty()) {
+                Text("Dotted line = projected from your phases — temperature tends to rise after ovulation (luteal phase).",
+                    style = MaterialTheme.typography.bodySmall)
+            }
         }
 
-        SectionCard("Weight") { LineChart(values = s.weightSeries, xLabels = s.weightLabels) }
+        SectionCard("Weight") {
+            LineChart(values = s.weightSeries, projected = s.weightProjected, xLabels = s.weightLabels)
+            if (s.weightProjected.isNotEmpty()) {
+                Text("Dotted line = projected by cycle phase (weight often nudges up in the luteal phase).",
+                    style = MaterialTheme.typography.bodySmall)
+            }
+        }
 
         SectionCard("Patterns") {
             if (s.insights.isEmpty()) Text("Keep logging and I'll spot patterns for you 💛",
