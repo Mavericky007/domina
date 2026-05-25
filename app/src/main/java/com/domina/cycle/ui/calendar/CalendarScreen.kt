@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -100,6 +101,7 @@ fun CalendarScreen(
             LegendDot("Fertile", cs.tertiaryContainer, filled = true)
             LegendDot("Ovulation", cs.tertiary, filled = true)
             LegendDot("Today", cs.primary, filled = false)
+            LegendHeart("Intimacy")
         }
 
         Spacer(Modifier.height(10.dp))
@@ -176,6 +178,9 @@ private fun DayCell(day: Int, s: CalendarUiState, cs: ColorScheme, onClick: () -
             "$day", style = MaterialTheme.typography.bodyMedium, color = onFill,
             fontWeight = if (isToday || isPeriod || isOvulation) FontWeight.Bold else FontWeight.Normal,
         )
+        if (day in s.intimacyDays) {
+            Text("❤️", fontSize = 8.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 1.dp))
+        }
     }
 }
 
@@ -238,6 +243,14 @@ private fun LegendDot(label: String, color: Color, filled: Boolean) {
             Modifier.size(14.dp).clip(CircleShape)
                 .then(if (filled) Modifier.background(color) else Modifier.border(2.dp, color, CircleShape)),
         )
+        Text(" $label", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun LegendHeart(label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("❤️", fontSize = 10.sp)
         Text(" $label", style = MaterialTheme.typography.bodySmall)
     }
 }

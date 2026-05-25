@@ -38,6 +38,7 @@ data class CalendarUiState(
     val predictedPeriodDays: Set<Int>,
     val fertileDays: Set<Int>,
     val ovulationDays: Set<Int>,
+    val intimacyDays: Set<Int> = emptySet(),
     val today: Int?,
     val events: List<CalendarEvent>,
 )
@@ -87,6 +88,9 @@ class CalendarViewModel @Inject constructor(
                 mode, periods, m, pred.averageCycleLength, pred.averagePeriodLength, today, outlook.delayDays,
             )
             val loggedDays = flowDates.filter { YearMonth.from(it) == m }.map { it.dayOfMonth }.toSet()
+            val intimacyDays = logs
+                .filter { YearMonth.from(it.date) == m && it.intimacy != com.domina.cycle.data.model.Intimacy.NONE }
+                .map { it.date.dayOfMonth }.toSet()
 
             val isCurrentMonth = YearMonth.from(today) == m
 
@@ -166,6 +170,7 @@ class CalendarViewModel @Inject constructor(
                 predictedPeriodDays = marks.predictedPeriod,
                 fertileDays = marks.fertile,
                 ovulationDays = marks.ovulation,
+                intimacyDays = intimacyDays,
                 today = today.takeIf { YearMonth.from(it) == m }?.dayOfMonth,
                 events = events,
             )
