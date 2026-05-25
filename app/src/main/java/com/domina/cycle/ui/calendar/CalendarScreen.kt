@@ -109,7 +109,10 @@ fun CalendarScreen(
                     )
                 }
             } else {
-                items(currentState.events) { ev -> EventRow(ev, cs, onClick = { ev.date?.let(onOpenDay) }) }
+                items(currentState.events) { ev ->
+                    if (ev.kind == CalEventKind.HEADER) SectionHeader(ev.title, cs)
+                    else EventRow(ev, cs, onClick = { ev.date?.let(onOpenDay) })
+                }
             }
         }
     }
@@ -171,32 +174,45 @@ private fun DayCell(day: Int, s: CalendarUiState, cs: ColorScheme, onClick: () -
 }
 
 @Composable
+private fun SectionHeader(text: String, cs: ColorScheme) {
+    Text(
+        text.uppercase(),
+        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
+        color = cs.onSurfaceVariant,
+        modifier = Modifier.padding(top = 14.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
 private fun EventRow(ev: CalendarEvent, cs: ColorScheme, onClick: () -> Unit) {
-    val (dotColor, dotFilled) = when (ev.kind) {
-        CalEventKind.PREDICTED_PERIOD -> cs.secondary to false
-        CalEventKind.FERTILE -> cs.tertiaryContainer to true
-        CalEventKind.OVULATION -> cs.tertiary to true
-        CalEventKind.LOGGED -> cs.primary to true
+    val badgeTint = when (ev.kind) {
+        CalEventKind.PERIOD -> cs.secondaryContainer
+        CalEventKind.PREDICTED_PERIOD -> cs.secondaryContainer
+        CalEventKind.FERTILE -> cs.tertiaryContainer
+        CalEventKind.OVULATION -> cs.tertiary
+        CalEventKind.TODAY -> cs.primaryContainer
+        else -> cs.surfaceContainerHigh
     }
+    val isToday = ev.kind == CalEventKind.TODAY
     val clickable = ev.date != null
     Row(
         Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .then(if (isToday) Modifier.background(cs.primaryContainer.copy(alpha = 0.4f)) else Modifier)
             .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = 6.dp),
+            .padding(horizontal = if (isToday) 8.dp else 0.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(cs.surfaceContainerHigh),
+            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(badgeTint),
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                Modifier.size(14.dp).clip(CircleShape)
-                    .then(if (dotFilled) Modifier.background(dotColor) else Modifier.border(2.dp, dotColor, CircleShape)),
-            )
+            Text(ev.icon, style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(ev.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(ev.title, style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium)
             Text(ev.detail, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
         }
         if (clickable) {

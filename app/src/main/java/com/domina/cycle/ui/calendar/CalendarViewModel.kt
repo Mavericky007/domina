@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.domina.cycle.data.model.DayLog
 import com.domina.cycle.data.model.FlowIntensity
+import com.domina.cycle.data.model.Mood
 import com.domina.cycle.data.repository.DayLogRepository
 import com.domina.cycle.domain.prediction.CyclePredictor
 import com.domina.cycle.domain.prediction.CycleProjection
@@ -15,13 +16,15 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-enum class CalEventKind { PREDICTED_PERIOD, FERTILE, OVULATION, LOGGED }
+enum class CalEventKind { PERIOD, PREDICTED_PERIOD, FERTILE, OVULATION, NOTE, TODAY, HEADER }
 
 data class CalendarEvent(
-    val date: LocalDate?,   // null for month-level prediction summaries; set for tappable logged days
+    val date: LocalDate?,   // tappable target; null for info rows / headers
+    val icon: String,       // emoji shown in the leading badge
     val title: String,
     val detail: String,
     val kind: CalEventKind,
+    val sort: LocalDate,    // ordering key (range start / event day)
 )
 
 /** Per-month derived view, computed purely from the observed logs. */
@@ -57,6 +60,11 @@ class CalendarViewModel @Inject constructor(
     companion object {
         private val dayFmt = DateTimeFormatter.ofPattern("MMM d")
         private val loggedFmt = DateTimeFormatter.ofPattern("EEE, MMM d")
+        private val moodEmoji = mapOf(
+            Mood.HAPPY to "😊", Mood.CALM to "😌", Mood.SENSITIVE to "🥺",
+            Mood.SAD to "😢", Mood.IRRITABLE to "😤", Mood.ANXIOUS to "😰",
+            Mood.ENERGETIC to "⚡", Mood.TIRED to "😴",
+        )
 
         fun buildState(m: YearMonth, logs: List<DayLog>, today: LocalDate): CalendarUiState {
             val flowDates = logs.filter { it.flow != FlowIntensity.NONE }.map { it.date }
@@ -65,22 +73,61 @@ class CalendarViewModel @Inject constructor(
             val marks = CycleProjection.marksFor(periods, m, pred.averageCycleLength, pred.averagePeriodLength, today)
             val loggedDays = flowDates.filter { YearMonth.from(it) == m }.map { it.dayOfMonth }.toSet()
 
-            val events = buildList {
+            val isCurrentMonth = YearMonth.from(today) == m
+
+            // ── Prediction / window summaries (always future-leaning markers) ──
+            val markerEvents = buildList {
                 if (marks.predictedPeriod.isNotEmpty()) {
-                    add(CalendarEvent(null, "Predicted period",
-                        rangeLabel(m, marks.predictedPeriod), CalEventKind.PREDICTED_PERIOD))
+                    add(CalendarEvent(null, "🩸", "Predicted period",
+                        rangeLabel(m, marks.predictedPeriod), CalEventKind.PREDICTED_PERIOD,
+                        m.atDay(marks.predictedPeriod.min())))
                 }
                 val fertileAll = marks.fertile + marks.ovulation
                 if (fertileAll.isNotEmpty()) {
-                    add(CalendarEvent(null, "Fertile window",
-                        rangeLabel(m, fertileAll), CalEventKind.FERTILE))
+                    add(CalendarEvent(null, "🌱", "Fertile window",
+                        rangeLabel(m, fertileAll), CalEventKind.FERTILE, m.atDay(fertileAll.min())))
                 }
                 marks.ovulation.minOrNull()?.let { d ->
-                    add(CalendarEvent(m.atDay(d), "Ovulation", m.atDay(d).format(dayFmt), CalEventKind.OVULATION))
+                    val date = m.atDay(d)
+                    add(CalendarEvent(date, "🥚", "Ovulation", date.format(dayFmt), CalEventKind.OVULATION, date))
                 }
-                logs.filter { YearMonth.from(it.date) == m && !it.isEmpty() }
-                    .sortedBy { it.date }
-                    .forEach { add(CalendarEvent(it.date, it.date.format(loggedFmt), summarize(it), CalEventKind.LOGGED)) }
+            }
+
+            // ── Notable logged days only (period / notes / symptoms / mood) ──
+            val loggedEvents = logs
+                .filter { YearMonth.from(it.date) == m && it.notable() && !(isCurrentMonth && it.date == today) }
+                .map { log ->
+                    val period = log.flow != FlowIntensity.NONE
+                    CalendarEvent(
+                        date = log.date,
+                        icon = if (period) "🩸" else moodEmoji[log.mood] ?: "📝",
+                        title = log.date.format(loggedFmt),
+                        detail = summarize(log),
+                        kind = if (period) CalEventKind.PERIOD else CalEventKind.NOTE,
+                        sort = log.date,
+                    )
+                }
+
+            val all = markerEvents + loggedEvents
+            val events = buildList {
+                if (isCurrentMonth) {
+                    val todayLog = logs.firstOrNull { it.date == today }
+                    add(CalendarEvent(today, "☀️", "Today · ${today.format(dayFmt)}",
+                        todayLog?.takeIf { it.notable() }?.let { summarize(it) } ?: "No entry yet — tap to add",
+                        CalEventKind.TODAY, today))
+                    val upcoming = all.filter { it.sort.isAfter(today) }.sortedBy { it.sort }
+                    val earlier = all.filter { !it.sort.isAfter(today) }.sortedByDescending { it.sort }
+                    if (upcoming.isNotEmpty()) {
+                        add(header("Coming up")); addAll(upcoming)
+                    }
+                    if (earlier.isNotEmpty()) {
+                        add(header("Earlier")); addAll(earlier)
+                    }
+                } else if (m.isAfter(YearMonth.from(today))) {
+                    addAll(all.sortedBy { it.sort })          // future month: soonest first
+                } else {
+                    addAll(all.sortedByDescending { it.sort }) // past month: most recent first
+                }
             }
 
             return CalendarUiState(
@@ -95,6 +142,12 @@ class CalendarViewModel @Inject constructor(
             )
         }
 
+        private fun header(text: String) =
+            CalendarEvent(null, "", text, "", CalEventKind.HEADER, LocalDate.MIN)
+
+        private fun DayLog.notable() =
+            flow != FlowIntensity.NONE || note.isNotBlank() || symptoms.isNotEmpty() || mood != null
+
         private fun rangeLabel(m: YearMonth, days: Set<Int>): String {
             val lo = days.min(); val hi = days.max()
             return if (lo == hi) m.atDay(lo).format(dayFmt) else "${m.atDay(lo).format(dayFmt)} – ${hi}"
@@ -105,8 +158,8 @@ class CalendarViewModel @Inject constructor(
                 if (log.flow != FlowIntensity.NONE) add("${log.flow.name.lowercase()} flow")
                 log.mood?.let { add(it.name.lowercase()) }
                 if (log.symptoms.isNotEmpty()) add(log.symptoms.joinToString(", "))
-                log.bbt?.let { add("BBT $it°") }
                 if (log.note.isNotBlank()) add("note")
+                log.bbt?.let { add("BBT $it°") }
             }
             return parts.joinToString(" · ").ifEmpty { "logged" }
         }
