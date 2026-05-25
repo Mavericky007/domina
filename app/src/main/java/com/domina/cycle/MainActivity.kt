@@ -69,9 +69,12 @@ class MainActivity : FragmentActivity() {
                         null -> {}  // brief: reading the flag
                     }
                 } else {
+                    val pinError by lockVm.error.collectAsStateWithLifecycle()
                     LockScreen(
                         hasPin = hasPin == true,
+                        error = pinError,
                         onPinEntered = lockVm::onPinEntered,
+                        onErrorShown = lockVm::clearError,
                         onUseBiometric = {
                             if (bio.isAvailable()) lifecycleScope.launch {
                                 if (bio.authenticate()) lockVm.onBiometricSuccess()
