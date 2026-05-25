@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.domina.cycle.data.model.DayLog
 import com.domina.cycle.data.model.FlowIntensity
+import com.domina.cycle.data.model.PregnancyTest
 import com.domina.cycle.data.prefs.SettingsRepository
 import com.domina.cycle.data.repository.DayLogRepository
 import com.domina.cycle.domain.guidance.PhaseGuidance
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -32,6 +34,8 @@ data class TodayUiState(
     val todayLog: DayLog?,
     val outlook: com.domina.cycle.domain.prediction.CycleRisk.Outlook =
         com.domina.cycle.domain.prediction.CycleRisk.Outlook.EMPTY,
+    val lastPeriodStart: LocalDate? = null,
+    val positiveTestThisCycle: Boolean = false,
 ) {
     companion object {
         fun empty(today: LocalDate) = TodayUiState(
@@ -51,12 +55,29 @@ data class PregnancyUiState(
 @HiltViewModel
 class TodayViewModel @Inject constructor(
     repository: DayLogRepository,
-    settings: SettingsRepository,
+    private val settings: SettingsRepository,
 ) : ViewModel() {
     val today: LocalDate = LocalDate.now()
 
     val userName: StateFlow<String?> =
         settings.userName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val pregnancySuggestDismissedLmp: StateFlow<Long?> =
+        settings.pregnancySuggestDismissedLmp.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** One-tap accept of the pregnancy-mode suggestion: switch mode + estimate the due date. */
+    fun confirmPregnancy() {
+        val lmp = state.value.lastPeriodStart ?: return
+        viewModelScope.launch {
+            settings.setAppMode(AppMode.PREGNANCY)
+            settings.setDueDate(PregnancyCalculator.dueDateFromLmp(lmp))
+        }
+    }
+
+    fun dismissPregnancySuggestion() {
+        val lmp = state.value.lastPeriodStart ?: return
+        viewModelScope.launch { settings.setPregnancySuggestDismissedLmp(lmp.toEpochDay()) }
+    }
 
     val state: StateFlow<TodayUiState> =
         repository.observeRange(today.minusDays(LOOKBACK_DAYS), today)
@@ -79,7 +100,12 @@ class TodayViewModel @Inject constructor(
             val guidance = prediction.phase?.let { PhaseGuide.forPhase(it) }
             val todayLog = logs.firstOrNull { it.date == today }
             val outlook = com.domina.cycle.domain.prediction.CycleRisk.analyze(prediction, periods, logs, today)
-            return TodayUiState(today, prediction, guidance, todayLog, outlook)
+            val lastPeriodStart = periods.maxByOrNull { it.start }?.start
+            val positiveTestThisCycle = logs.any {
+                it.pregnancyTest == PregnancyTest.POSITIVE &&
+                    (lastPeriodStart == null || !it.date.isBefore(lastPeriodStart))
+            }
+            return TodayUiState(today, prediction, guidance, todayLog, outlook, lastPeriodStart, positiveTestThisCycle)
         }
 
         fun buildPregnancyState(mode: AppMode, dueDate: LocalDate?, today: LocalDate): PregnancyUiState? {

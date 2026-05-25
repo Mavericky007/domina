@@ -87,6 +87,14 @@ fun LogScreen(date: LocalDate, onSaved: () -> Unit, vm: LogViewModel = hiltViewM
                 onClick = { vm.setEmergencyContraception(!state.emergencyContraception) },
                 label = { Text("💊 Morning-after pill") })
         }
+        Section("Pregnancy test") {
+            FilterChip(selected = state.pregnancyTest == PregnancyTest.NEGATIVE,
+                onClick = { vm.setPregnancyTest(PregnancyTest.NEGATIVE) },
+                label = { Text("negative") })
+            FilterChip(selected = state.pregnancyTest == PregnancyTest.POSITIVE,
+                onClick = { vm.setPregnancyTest(PregnancyTest.POSITIVE) },
+                label = { Text("🤰 positive") })
+        }
 
         Text("Basal body temperature (°C)", style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold)

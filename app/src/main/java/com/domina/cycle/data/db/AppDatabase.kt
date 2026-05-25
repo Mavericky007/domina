@@ -20,7 +20,7 @@ import com.domina.cycle.data.db.entity.ChecklistItemEntity
         ContractionEntity::class,
         WeightEntryEntity::class,
         ChecklistItemEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

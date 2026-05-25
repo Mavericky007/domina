@@ -99,6 +99,12 @@ class SettingsViewModel @Inject constructor(
 
     fun setMode(m: com.domina.cycle.domain.pregnancy.AppMode) { viewModelScope.launch { settings.setAppMode(m) } }
     fun setDueDate(date: java.time.LocalDate?) { viewModelScope.launch { settings.setDueDate(date) } }
+    /** Set the due date from an estimated pregnancy start (last period) — LMP + 280 days. */
+    fun setPregnancyStart(date: java.time.LocalDate) {
+        viewModelScope.launch {
+            settings.setDueDate(com.domina.cycle.domain.pregnancy.PregnancyCalculator.dueDateFromLmp(date))
+        }
+    }
 
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()

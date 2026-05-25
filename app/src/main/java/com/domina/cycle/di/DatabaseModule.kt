@@ -13,6 +13,7 @@ import com.domina.cycle.data.db.MedicationDao
 import com.domina.cycle.data.db.MIGRATION_1_2
 import com.domina.cycle.data.db.MIGRATION_2_3
 import com.domina.cycle.data.db.MIGRATION_3_4
+import com.domina.cycle.data.db.MIGRATION_4_5
 import com.domina.cycle.data.db.WeightEntryDao
 import com.domina.cycle.security.DatabaseKeyProvider
 import dagger.Module
@@ -33,7 +34,7 @@ object DatabaseModule {
         val passphrase = DatabaseKeyProvider(context).getOrCreatePassphrase()
         return Room.databaseBuilder(context, AppDatabase::class.java, "domina.db")
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
 

@@ -18,5 +18,6 @@ data class DayLogEntity(
     val weight: Double? = null,
     val intimacy: String = "NONE",
     val emergencyContraception: Boolean = false,
+    val pregnancyTest: String = "NOT_TESTED",
     val note: String = "",
 )

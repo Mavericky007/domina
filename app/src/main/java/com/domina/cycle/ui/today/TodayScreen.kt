@@ -53,6 +53,17 @@ fun TodayScreen(
         Spacer(Modifier.height(16.dp))
 
         val preg = pregnancy
+        val dismissedLmp by vm.pregnancySuggestDismissedLmp.collectAsStateWithLifecycle()
+        if (preg == null && state.positiveTestThisCycle &&
+            state.lastPeriodStart?.toEpochDay() != dismissedLmp
+        ) {
+            PregnancySwitchCard(
+                onConfirm = vm::confirmPregnancy,
+                onDismiss = vm::dismissPregnancySuggestion,
+            )
+            Spacer(Modifier.height(16.dp))
+        }
+
         if (preg != null) {
             PregnancyDashboard(
                 preg,
@@ -110,6 +121,29 @@ fun TodayScreen(
 @Composable
 private fun ChipInfo(label: String, value: String) {
     AssistChip(onClick = {}, label = { Text("$label · $value") })
+}
+
+@Composable
+private fun PregnancySwitchCard(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = cs.tertiaryContainer),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("🤰 A positive test was logged",
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                color = cs.onTertiaryContainer)
+            Spacer(Modifier.height(6.dp))
+            Text("Switch to Pregnancy mode? I'll estimate your due date from your last period — you can adjust it anytime in Settings 💛",
+                style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onConfirm) { Text("Yes, I'm pregnant") }
+                TextButton(onClick = onDismiss) { Text("Not now") }
+            }
+        }
+    }
 }
 
 @Composable

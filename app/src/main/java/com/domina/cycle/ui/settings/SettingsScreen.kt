@@ -101,10 +101,22 @@ fun SettingsScreen(
         }
         if (mode == com.domina.cycle.domain.pregnancy.AppMode.PREGNANCY) {
             val due by vm.dueDate.collectAsStateWithLifecycle()
-            var text by remember(due) { mutableStateOf(due?.toString() ?: "") }
+            val start = due?.minusDays(280)
+            Text("Enter either one — the other is calculated (40 weeks apart).",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            var startText by remember(start) { mutableStateOf(start?.toString() ?: "") }
             OutlinedTextField(
-                value = text,
-                onValueChange = { text = it; runCatching { java.time.LocalDate.parse(it) }.getOrNull()?.let(vm::setDueDate) },
+                value = startText,
+                onValueChange = { startText = it; runCatching { java.time.LocalDate.parse(it) }.getOrNull()?.let(vm::setPregnancyStart) },
+                label = { Text("Estimated start / last period (YYYY-MM-DD)") },
+                singleLine = true,
+            )
+            Spacer(Modifier.height(8.dp))
+            var dueText by remember(due) { mutableStateOf(due?.toString() ?: "") }
+            OutlinedTextField(
+                value = dueText,
+                onValueChange = { dueText = it; runCatching { java.time.LocalDate.parse(it) }.getOrNull()?.let(vm::setDueDate) },
                 label = { Text("Due date (YYYY-MM-DD)") },
                 singleLine = true,
             )

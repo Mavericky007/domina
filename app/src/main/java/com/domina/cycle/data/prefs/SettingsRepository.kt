@@ -80,6 +80,15 @@ class SettingsRepository @Inject constructor(
         }
     }
 
+    // Last-period date for which the "switch to pregnancy mode?" suggestion was dismissed.
+    private val pregSuggestDismissKey =
+        androidx.datastore.preferences.core.longPreferencesKey("preg_suggest_dismissed_lmp")
+    val pregnancySuggestDismissedLmp: Flow<Long?> =
+        context.dataStore.data.map { it[pregSuggestDismissKey] }
+    suspend fun setPregnancySuggestDismissedLmp(epochDay: Long) {
+        context.dataStore.edit { it[pregSuggestDismissKey] = epochDay }
+    }
+
     // --- discreet icon ---
     private val discreetKey = booleanPreferencesKey("discreet_icon")
     val discreetIcon: Flow<Boolean> = context.dataStore.data.map { it[discreetKey] ?: false }

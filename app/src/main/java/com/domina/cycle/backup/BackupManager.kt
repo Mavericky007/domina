@@ -37,6 +37,7 @@ class BackupManager @Inject constructor(private val db: AppDatabase) {
                     it.note,
                     it.intimacy,
                     it.emergencyContraception.toString(),
+                    it.pregnancyTest,
                 )
             },
             "cycle_events" to db.cycleEventDao().getAll().map {
@@ -96,6 +97,7 @@ class BackupManager @Inject constructor(private val db: AppDatabase) {
                     note = r[11],
                     intimacy = r.getOrNull(12)?.ifEmpty { null } ?: "NONE",
                     emergencyContraception = r.getOrNull(13).toBoolean(),
+                    pregnancyTest = r.getOrNull(14)?.ifEmpty { null } ?: "NOT_TESTED",
                 )
             )
         }

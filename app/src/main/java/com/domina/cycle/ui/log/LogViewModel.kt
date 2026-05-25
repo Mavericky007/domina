@@ -36,5 +36,8 @@ class LogViewModel @Inject constructor(
         _state.update { it.copy(intimacy = if (it.intimacy == i) Intimacy.NONE else i) }
     }
     fun setEmergencyContraception(taken: Boolean) { _state.update { it.copy(emergencyContraception = taken) } }
+    fun setPregnancyTest(t: PregnancyTest) {
+        _state.update { it.copy(pregnancyTest = if (it.pregnancyTest == t) PregnancyTest.NOT_TESTED else t) }
+    }
     fun save() { viewModelScope.launch { repository.save(_state.value) } }
 }

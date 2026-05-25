@@ -165,7 +165,8 @@ class CalendarViewModel @Inject constructor(
 
         private fun DayLog.notable() =
             flow != FlowIntensity.NONE || note.isNotBlank() || symptoms.isNotEmpty() || mood != null ||
-                intimacy != com.domina.cycle.data.model.Intimacy.NONE || emergencyContraception
+                intimacy != com.domina.cycle.data.model.Intimacy.NONE || emergencyContraception ||
+                pregnancyTest != com.domina.cycle.data.model.PregnancyTest.NOT_TESTED
 
         private fun rangeLabel(m: YearMonth, days: Set<Int>): String {
             val lo = days.min(); val hi = days.max()
@@ -179,6 +180,8 @@ class CalendarViewModel @Inject constructor(
                 if (log.symptoms.isNotEmpty()) add(log.symptoms.joinToString(", "))
                 if (log.intimacy != com.domina.cycle.data.model.Intimacy.NONE) add("${log.intimacy.name.lowercase()} sex")
                 if (log.emergencyContraception) add("morning-after pill")
+                if (log.pregnancyTest != com.domina.cycle.data.model.PregnancyTest.NOT_TESTED)
+                    add("${log.pregnancyTest.name.lowercase()} pregnancy test")
                 if (log.note.isNotBlank()) add("note")
                 log.bbt?.let { add("BBT $it°") }
             }
