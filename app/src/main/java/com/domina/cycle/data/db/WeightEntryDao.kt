@@ -10,6 +10,10 @@ interface WeightEntryDao {
     @Query("SELECT * FROM weight_entries ORDER BY dateEpochDay") fun observeAll(): Flow<List<WeightEntryEntity>>
     @Query("DELETE FROM weight_entries WHERE id = :id") suspend fun deleteById(id: Long)
 
+    @Query("SELECT weightKg FROM weight_entries WHERE dateEpochDay = :day ORDER BY id DESC LIMIT 1")
+    suspend fun weightForDate(day: Long): Double?
+    @Query("DELETE FROM weight_entries WHERE dateEpochDay = :day") suspend fun deleteByDate(day: Long)
+
     @Query("SELECT * FROM weight_entries")
     suspend fun getAll(): List<WeightEntryEntity>
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.domina.cycle.data.model.*
 import com.domina.cycle.data.repository.DayLogRepository
+import com.domina.cycle.data.repository.WeightRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -13,15 +14,22 @@ import javax.inject.Inject
 @HiltViewModel
 class LogViewModel @Inject constructor(
     private val repository: DayLogRepository,
+    private val weightRepository: WeightRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(DayLog(date = LocalDate.now()))
     val state: StateFlow<DayLog> = _state.asStateFlow()
 
+    // Weight is stored in the shared weight_entries table (feeds Insights), one per day.
+    private val _weight = MutableStateFlow<Double?>(null)
+    val weight: StateFlow<Double?> = _weight.asStateFlow()
+
     fun load(date: LocalDate) {
         viewModelScope.launch {
             _state.value = repository.getByDate(date) ?: DayLog(date = date)
+            _weight.value = weightRepository.weightFor(date.toEpochDay())
         }
     }
+    fun setWeight(kg: Double?) { _weight.value = kg }
     fun setMood(mood: Mood) { _state.update { it.copy(mood = mood) } }
     fun setFlow(flow: FlowIntensity) { _state.update { it.copy(flow = flow) } }
     fun setNote(note: String) { _state.update { it.copy(note = note) } }
@@ -39,5 +47,10 @@ class LogViewModel @Inject constructor(
     fun setPregnancyTest(t: PregnancyTest) {
         _state.update { it.copy(pregnancyTest = if (it.pregnancyTest == t) PregnancyTest.NOT_TESTED else t) }
     }
-    fun save() { viewModelScope.launch { repository.save(_state.value) } }
+    fun save() {
+        viewModelScope.launch {
+            repository.save(_state.value)
+            weightRepository.setForDate(_state.value.date.toEpochDay(), _weight.value)
+        }
+    }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -106,6 +107,20 @@ fun LogScreen(date: LocalDate, onSaved: () -> Unit, vm: LogViewModel = hiltViewM
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
         )
+        Spacer(Modifier.height(16.dp))
+
+        val weight by vm.weight.collectAsState()
+        var showWeight by remember(state.date) { mutableStateOf(false) }
+        LaunchedEffect(weight) { if (weight != null) showWeight = true }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text("Weight", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f))
+            Switch(checked = showWeight, onCheckedChange = { showWeight = it; if (!it) vm.setWeight(null) })
+        }
+        if (showWeight) {
+            Spacer(Modifier.height(8.dp))
+            com.domina.cycle.ui.onboarding.WeightField(initialKg = weight) { vm.setWeight(it) }
+        }
         Spacer(Modifier.height(16.dp))
 
         Text("Note", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)

@@ -37,8 +37,8 @@ fun OnboardingScreen(
 
     var name by remember { mutableStateOf("") }
     var dob by remember { mutableStateOf<LocalDate?>(null) }
-    var heightText by remember { mutableStateOf("") }
-    var weightText by remember { mutableStateOf("") }
+    var heightCm by remember { mutableStateOf<Int?>(null) }
+    var weightKg by remember { mutableStateOf<Double?>(null) }
     var lastPeriod by remember { mutableStateOf<LocalDate?>(null) }
     var prefilled by remember { mutableStateOf(false) }
 
@@ -46,14 +46,14 @@ fun OnboardingScreen(
         if (!prefilled && (prefill.name.isNotEmpty() || prefill.birthDate != null || prefill.heightCm != null)) {
             name = prefill.name
             dob = prefill.birthDate
-            heightText = prefill.heightCm?.toString() ?: ""
+            heightCm = prefill.heightCm
             prefilled = true
         }
     }
 
     var step by remember { mutableStateOf(0) }
     val lastStep = if (isEdit) 0 else 2
-    fun finish() = vm.save(name, dob, heightText.toIntOrNull(), weightText.toDoubleOrNull(), lastPeriod, isEdit, onDone)
+    fun finish() = vm.save(name, dob, heightCm, weightKg, lastPeriod, isEdit, onDone)
 
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         if (!isEdit) {
@@ -68,8 +68,9 @@ fun OnboardingScreen(
                 NameField(name) { name = it }
                 Spacer(Modifier.height(12.dp))
                 DateField("Date of birth", dob, age(dob)) { dob = it }
-                Spacer(Modifier.height(12.dp))
-                NumberField("Height (cm)", heightText, decimal = false) { heightText = it }
+                Spacer(Modifier.height(16.dp))
+                FieldLabel("Height")
+                HeightField(heightCm) { heightCm = it }
             } else when (step) {
                 0 -> {
                     Spacer(Modifier.height(24.dp))
@@ -88,12 +89,14 @@ fun OnboardingScreen(
                     NameField(name) { name = it }
                 }
                 1 -> {
-                    StepHeader("A little about you 💛", "Optional — it helps personalise your tips. Skip anything you like.")
+                    StepHeader("A little about you 💛", "Spin the dials to set your details — no typing needed.")
                     DateField("Date of birth", dob, age(dob)) { dob = it }
-                    Spacer(Modifier.height(12.dp))
-                    NumberField("Height (cm)", heightText, decimal = false) { heightText = it }
-                    Spacer(Modifier.height(12.dp))
-                    NumberField("Current weight (kg)", weightText, decimal = true) { weightText = it }
+                    Spacer(Modifier.height(16.dp))
+                    FieldLabel("Height")
+                    HeightField(heightCm) { heightCm = it }
+                    Spacer(Modifier.height(20.dp))
+                    FieldLabel("Current weight")
+                    WeightField(weightKg) { weightKg = it }
                 }
                 else -> {
                     StepHeader("Your cycle", "When did your last period start? This lets me predict your cycle right away. (Optional)")
@@ -160,19 +163,41 @@ private fun NameField(value: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun NumberField(label: String, value: String, decimal: Boolean, onChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { input ->
-            val filtered = input.filter { it.isDigit() || (decimal && it == '.') }
-            if (filtered.count { it == '.' } <= 1 && filtered.length <= 6) onChange(filtered)
-        },
-        label = { Text(label) }, singleLine = true,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    )
+private fun FieldLabel(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+    Spacer(Modifier.height(8.dp))
+}
+
+// ── Height (cm 120–210, or ft/in) ─────────────────────────────────────
+private const val H_MIN_CM = 120
+private const val H_MAX_CM = 210
+private fun cmToInches(cm: Int) = Math.round(cm / 2.54).toInt()
+private fun inchesToCm(inch: Int) = Math.round(inch * 2.54).toInt()
+private val H_MIN_IN = cmToInches(H_MIN_CM)
+private val H_MAX_IN = cmToInches(H_MAX_CM)
+
+@Composable
+private fun HeightField(initialCm: Int?, onChange: (Int) -> Unit) {
+    var cmUnit by remember { mutableStateOf(true) }
+    var cm by remember { mutableStateOf(initialCm ?: 165) }
+    var adopted by remember { mutableStateOf(initialCm != null) }
+    LaunchedEffect(initialCm) { if (initialCm != null && !adopted) { cm = initialCm; adopted = true } }
+
+    UnitToggle("cm", "ft / in", cmUnit) { cmUnit = it }
+    Spacer(Modifier.height(8.dp))
+
+    val items = remember(cmUnit) {
+        if (cmUnit) (H_MIN_CM..H_MAX_CM).map { "$it cm" }
+        else (H_MIN_IN..H_MAX_IN).map { "${it / 12}′ ${it % 12}″" }
+    }
+    val index = remember(cmUnit, adopted) {
+        if (cmUnit) (cm.coerceIn(H_MIN_CM, H_MAX_CM) - H_MIN_CM)
+        else (cmToInches(cm).coerceIn(H_MIN_IN, H_MAX_IN) - H_MIN_IN)
+    }
+    WheelPicker(items, index, onSelectedIndexChange = { i ->
+        cm = if (cmUnit) H_MIN_CM + i else inchesToCm(H_MIN_IN + i)
+        onChange(cm)
+    })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

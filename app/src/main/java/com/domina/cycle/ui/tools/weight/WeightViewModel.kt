@@ -18,7 +18,7 @@ class WeightViewModel @Inject constructor(
         repository.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun add(kg: Double, date: LocalDate = LocalDate.now()) {
-        viewModelScope.launch { repository.add(date.toEpochDay(), kg) }
+        viewModelScope.launch { repository.setForDate(date.toEpochDay(), kg) }  // one entry per day, shared with the daily log
     }
     fun delete(id: Long) { viewModelScope.launch { repository.delete(id) } }
 }
