@@ -7,6 +7,9 @@
 # Local session notes / work logs
 sessions/
 
+# Local release helper (references the local signing key path)
+release.sh
+
 # Android / Gradle
 *.iml
 .gradle/
