@@ -11,6 +11,7 @@ import com.domina.cycle.data.db.entity.KickSessionEntity
 import com.domina.cycle.data.db.entity.ContractionEntity
 import com.domina.cycle.data.db.entity.WeightEntryEntity
 import com.domina.cycle.data.db.entity.ChecklistItemEntity
+import com.domina.cycle.data.db.entity.CheckInEntity
 
 @Database(
     entities = [DayLogEntity::class, CycleEventEntity::class,
@@ -19,8 +20,9 @@ import com.domina.cycle.data.db.entity.ChecklistItemEntity
         KickSessionEntity::class,
         ContractionEntity::class,
         WeightEntryEntity::class,
-        ChecklistItemEntity::class],
-    version = 5,
+        ChecklistItemEntity::class,
+        CheckInEntity::class],
+    version = 6,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -33,4 +35,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun contractionDao(): ContractionDao
     abstract fun weightEntryDao(): WeightEntryDao
     abstract fun checklistItemDao(): ChecklistItemDao
+    abstract fun checkInDao(): CheckInDao
 }

@@ -2,6 +2,7 @@ package com.domina.cycle.backup
 
 import com.domina.cycle.data.db.AppDatabase
 import com.domina.cycle.data.db.entity.AppointmentEntity
+import com.domina.cycle.data.db.entity.CheckInEntity
 import com.domina.cycle.data.db.entity.ChecklistItemEntity
 import com.domina.cycle.data.db.entity.ContractionEntity
 import com.domina.cycle.data.db.entity.CycleEventEntity
@@ -61,6 +62,9 @@ class BackupManager @Inject constructor(private val db: AppDatabase) {
             "contractions" to db.contractionDao().getAll().map {
                 listOf(it.id.toString(), it.startMillis.toString(), it.endMillis.toString())
             },
+            "check_ins" to db.checkInDao().getAll().map {
+                listOf(it.id.toString(), it.epochDay.toString(), it.minuteOfDay.toString(), it.kind, it.score.toString())
+            },
         )
         val sealed = BackupCrypto.seal(BackupCodec.encode(tables).toByteArray(Charsets.UTF_8), passphrase)
         out.use { it.write(sealed) }
@@ -79,6 +83,7 @@ class BackupManager @Inject constructor(private val db: AppDatabase) {
         db.checklistItemDao().clearAll()
         db.kickSessionDao().clearAll()
         db.contractionDao().clearAll()
+        db.checkInDao().clearAll()
 
         tables["day_logs"]?.forEach { r ->
             db.dayLogDao().upsert(
@@ -121,6 +126,11 @@ class BackupManager @Inject constructor(private val db: AppDatabase) {
         }
         tables["contractions"]?.forEach { r ->
             db.contractionDao().insert(ContractionEntity(startMillis = r[1].toLong(), endMillis = r[2].toLong()))
+        }
+        tables["check_ins"]?.forEach { r ->
+            db.checkInDao().insert(
+                CheckInEntity(epochDay = r[1].toLong(), minuteOfDay = r[2].toInt(), kind = r[3], score = r[4].toInt())
+            )
         }
     }
 }

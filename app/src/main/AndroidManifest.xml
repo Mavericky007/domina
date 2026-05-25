@@ -21,6 +21,8 @@
         android:theme="@style/Theme.Domina">
         <receiver android:name=".reminders.ReminderReceiver" android:exported="false" />
         <receiver android:name=".reminders.ItemReminderReceiver" android:exported="false" />
+        <receiver android:name=".reminders.CheckInReceiver" android:exported="false" />
+        <receiver android:name=".reminders.CheckInActionReceiver" android:exported="false" />
 
         <receiver android:name=".widget.CycleWidgetReceiver" android:exported="false">
             <intent-filter>

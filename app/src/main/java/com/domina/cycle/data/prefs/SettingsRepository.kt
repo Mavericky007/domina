@@ -40,6 +40,7 @@ class SettingsRepository @Inject constructor(
     private val fertilityAlertsKey = booleanPreferencesKey("rem_fertility")
     private val dailyNudgeKey = booleanPreferencesKey("rem_nudge")
     private val nudgeMinsKey = intPreferencesKey("rem_nudge_mins")
+    private val checkInsKey = booleanPreferencesKey("rem_checkins")
 
     val reminderSettings: Flow<ReminderSettings> =
         context.dataStore.data.map { p ->
@@ -48,6 +49,7 @@ class SettingsRepository @Inject constructor(
                 fertilityAlerts = p[fertilityAlertsKey] ?: true,
                 dailyNudge = p[dailyNudgeKey] ?: false,
                 dailyNudgeTime = ReminderSettingsCodec.minutesToTime(p[nudgeMinsKey] ?: (20 * 60)),
+                checkIns = p[checkInsKey] ?: false,
             )
         }
 
@@ -57,6 +59,7 @@ class SettingsRepository @Inject constructor(
             it[fertilityAlertsKey] = s.fertilityAlerts
             it[dailyNudgeKey] = s.dailyNudge
             it[nudgeMinsKey] = ReminderSettingsCodec.timeToMinutes(s.dailyNudgeTime)
+            it[checkInsKey] = s.checkIns
         }
     }
 

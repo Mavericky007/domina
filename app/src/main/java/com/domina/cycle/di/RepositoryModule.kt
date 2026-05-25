@@ -38,4 +38,7 @@ abstract class RepositoryModule {
     abstract fun bindUpdateRepository(
         impl: com.domina.cycle.data.update.GithubUpdateRepository,
     ): com.domina.cycle.data.update.UpdateRepository
+
+    @Binds @Singleton
+    abstract fun bindCheckInRepository(impl: RoomCheckInRepository): CheckInRepository
 }

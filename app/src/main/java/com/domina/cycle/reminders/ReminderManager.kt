@@ -34,6 +34,8 @@ class ReminderManager @Inject constructor(
         val reminders = ReminderScheduler.compute(prediction, settings, LocalDateTime.now())
         AlarmScheduler(context).reschedule(reminders)
 
+        with(CheckInScheduler(context)) { if (settings.checkIns) scheduleAll() else cancelAll() }
+
         val meds = medicationRepository.observeAll().first().map {
             MedAppointmentScheduler.MedInput(it.id, it.name, it.timeMinutes, it.enabled)
         }

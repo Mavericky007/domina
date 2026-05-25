@@ -9,4 +9,5 @@ data class ReminderSettings(
     val dailyNudgeTime: LocalTime = LocalTime.of(20, 0),
     val periodLeadDays: Int = 2,
     val morningHour: Int = 9,
+    val checkIns: Boolean = false,
 )

@@ -56,11 +56,18 @@ data class PregnancyUiState(
 class TodayViewModel @Inject constructor(
     repository: DayLogRepository,
     private val settings: SettingsRepository,
+    checkInRepository: com.domina.cycle.data.repository.CheckInRepository,
 ) : ViewModel() {
     val today: LocalDate = LocalDate.now()
 
     val userName: StateFlow<String?> =
         settings.userName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Today's averaged mood emoji from notification check-ins, if any. */
+    val todayMoodEmoji: StateFlow<String?> =
+        checkInRepository.observeSince(today.toEpochDay())
+            .map { com.domina.cycle.domain.checkin.CheckInStats.dailyMoodEmoji(it, today.toEpochDay()) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val pregnancySuggestDismissedLmp: StateFlow<Long?> =
         settings.pregnancySuggestDismissedLmp.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

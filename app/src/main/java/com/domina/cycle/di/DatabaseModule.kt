@@ -14,6 +14,8 @@ import com.domina.cycle.data.db.MIGRATION_1_2
 import com.domina.cycle.data.db.MIGRATION_2_3
 import com.domina.cycle.data.db.MIGRATION_3_4
 import com.domina.cycle.data.db.MIGRATION_4_5
+import com.domina.cycle.data.db.MIGRATION_5_6
+import com.domina.cycle.data.db.CheckInDao
 import com.domina.cycle.data.db.WeightEntryDao
 import com.domina.cycle.security.DatabaseKeyProvider
 import dagger.Module
@@ -34,7 +36,7 @@ object DatabaseModule {
         val passphrase = DatabaseKeyProvider(context).getOrCreatePassphrase()
         return Room.databaseBuilder(context, AppDatabase::class.java, "domina.db")
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
     }
 
@@ -46,4 +48,5 @@ object DatabaseModule {
     @Provides fun provideContractionDao(db: AppDatabase): ContractionDao = db.contractionDao()
     @Provides fun provideWeightEntryDao(db: AppDatabase): WeightEntryDao = db.weightEntryDao()
     @Provides fun provideChecklistItemDao(db: AppDatabase): ChecklistItemDao = db.checklistItemDao()
+    @Provides fun provideCheckInDao(db: AppDatabase): CheckInDao = db.checkInDao()
 }

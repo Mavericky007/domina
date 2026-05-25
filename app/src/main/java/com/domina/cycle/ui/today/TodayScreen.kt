@@ -41,6 +41,7 @@ fun TodayScreen(
             in 5..11 -> "Good morning"; in 12..17 -> "Good afternoon"; else -> "Good evening"
         }
         val name by vm.userName.collectAsStateWithLifecycle()
+        val moodEmoji by vm.todayMoodEmoji.collectAsStateWithLifecycle()
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(if (name.isNullOrBlank()) "$greeting 💛" else "$greeting, $name 💛",
                 style = MaterialTheme.typography.headlineSmall,
@@ -49,6 +50,10 @@ fun TodayScreen(
                 state.today.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d")),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            moodEmoji?.let {
+                Text("Today's mood so far: $it", style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         Spacer(Modifier.height(16.dp))
 
