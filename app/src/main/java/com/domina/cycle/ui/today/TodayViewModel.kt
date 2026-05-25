@@ -9,6 +9,7 @@ import com.domina.cycle.data.prefs.SettingsRepository
 import com.domina.cycle.data.repository.DayLogRepository
 import com.domina.cycle.domain.guidance.PhaseGuidance
 import com.domina.cycle.domain.guidance.PhaseGuide
+import com.domina.cycle.domain.prediction.CycleForecast
 import com.domina.cycle.domain.prediction.CyclePrediction
 import com.domina.cycle.domain.prediction.CyclePredictor
 import com.domina.cycle.domain.prediction.PeriodDeriver
@@ -87,8 +88,10 @@ class TodayViewModel @Inject constructor(
     }
 
     val state: StateFlow<TodayUiState> =
-        repository.observeRange(today.minusDays(LOOKBACK_DAYS), today)
-            .map { logs -> buildState(logs, today) }
+        combine(
+            repository.observeRange(today.minusDays(LOOKBACK_DAYS), today),
+            settings.appMode,
+        ) { logs, mode -> buildState(logs, today, mode) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState.empty(today))
 
     val pregnancy: StateFlow<PregnancyUiState?> =
@@ -100,13 +103,13 @@ class TodayViewModel @Inject constructor(
         private const val LOOKBACK_DAYS = 400L
 
         /** Pure transform from logs to dashboard state — unit-tested directly. */
-        fun buildState(logs: List<DayLog>, today: LocalDate): TodayUiState {
+        fun buildState(logs: List<DayLog>, today: LocalDate, mode: AppMode = AppMode.CYCLE): TodayUiState {
             val flowDates = logs.filter { it.flow != FlowIntensity.NONE }.map { it.date }
             val periods = PeriodDeriver.derive(flowDates)
             val prediction = CyclePredictor.predict(periods, today)
             val guidance = prediction.phase?.let { PhaseGuide.forPhase(it) }
             val todayLog = logs.firstOrNull { it.date == today }
-            val outlook = com.domina.cycle.domain.prediction.CycleRisk.analyze(prediction, periods, logs, today)
+            val outlook = CycleForecast.outlookFor(mode, prediction, periods, logs, today)
             val lastPeriodStart = periods.maxByOrNull { it.start }?.start
             val positiveTestThisCycle = logs.any {
                 it.pregnancyTest == PregnancyTest.POSITIVE &&

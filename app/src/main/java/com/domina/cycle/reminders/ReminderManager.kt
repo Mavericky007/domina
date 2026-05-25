@@ -24,6 +24,7 @@ class ReminderManager @Inject constructor(
     private val settingsProvider: ReminderSettingsProvider,
     private val medicationRepository: MedicationRepository,
     private val appointmentRepository: AppointmentRepository,
+    private val appSettings: com.domina.cycle.data.prefs.SettingsRepository,
 ) {
     suspend fun reschedule() {
         val today = LocalDate.now()
@@ -31,7 +32,11 @@ class ReminderManager @Inject constructor(
         val periods = PeriodDeriver.derive(logs.filter { it.flow != FlowIntensity.NONE }.map { it.date })
         val prediction = CyclePredictor.predict(periods, today)
         val settings: ReminderSettings = settingsProvider.current()
-        val reminders = ReminderScheduler.compute(prediction, settings, LocalDateTime.now())
+        val mode = appSettings.appMode.first()
+        val cycleReminders = if (mode == com.domina.cycle.domain.pregnancy.AppMode.PREGNANCY)
+            settings.copy(periodAlerts = false, fertilityAlerts = false)
+        else settings
+        val reminders = ReminderScheduler.compute(prediction, cycleReminders, LocalDateTime.now())
         AlarmScheduler(context).reschedule(reminders)
 
         with(CheckInScheduler(context)) { if (settings.checkIns) scheduleAll() else cancelAll() }
