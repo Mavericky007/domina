@@ -12,6 +12,7 @@ import com.domina.cycle.domain.prediction.CycleForecast
 import com.domina.cycle.domain.prediction.PeriodDeriver
 import com.domina.cycle.domain.prediction.CycleRisk
 import com.domina.cycle.domain.pregnancy.AppMode
+import com.domina.cycle.domain.pregnancy.PregnancyProjection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import java.time.LocalDate
@@ -39,6 +40,8 @@ data class CalendarUiState(
     val fertileDays: Set<Int>,
     val ovulationDays: Set<Int>,
     val intimacyDays: Set<Int> = emptySet(),
+    val trimesterDays: Map<Int, Int> = emptyMap(),
+    val isPregnancy: Boolean = false,
     val today: Int?,
     val events: List<CalendarEvent>,
 )
@@ -94,8 +97,20 @@ class CalendarViewModel @Inject constructor(
 
             val isCurrentMonth = YearMonth.from(today) == m
 
+            val isPregnancy = mode == AppMode.PREGNANCY && dueDate != null
+            val trimesterDays = if (isPregnancy) PregnancyProjection.marksFor(dueDate!!, m) else emptyMap()
+
             // ── Prediction / window summaries (always future-leaning markers) ──
-            val markerEvents = buildList {
+            val markerEvents = if (isPregnancy) buildList {
+                if (java.time.YearMonth.from(dueDate) == m) {
+                    add(CalendarEvent(dueDate, "👶", "Due date", dueDate!!.format(dayFmt), CalEventKind.NOTE, dueDate!!))
+                }
+                trimesterDays.entries.groupBy { it.value }.toSortedMap().forEach { (tri, days) ->
+                    val firstDay = days.minOf { it.key }
+                    val date = m.atDay(firstDay)
+                    add(CalendarEvent(null, triEmoji(tri), "Trimester $tri", "Week ${weekOf(dueDate!!, date)}+", CalEventKind.NOTE, date))
+                }
+            } else buildList {
                 if (marks.predictedPeriod.isNotEmpty()) {
                     add(CalendarEvent(null, "🩸", "Predicted period",
                         rangeLabel(m, marks.predictedPeriod), CalEventKind.PREDICTED_PERIOD,
@@ -171,6 +186,8 @@ class CalendarViewModel @Inject constructor(
                 fertileDays = marks.fertile,
                 ovulationDays = marks.ovulation,
                 intimacyDays = intimacyDays,
+                trimesterDays = trimesterDays,
+                isPregnancy = isPregnancy,
                 today = today.takeIf { YearMonth.from(it) == m }?.dayOfMonth,
                 events = events,
             )
@@ -183,6 +200,10 @@ class CalendarViewModel @Inject constructor(
             flow != FlowIntensity.NONE || note.isNotBlank() || symptoms.isNotEmpty() || mood != null ||
                 intimacy != com.domina.cycle.data.model.Intimacy.NONE || emergencyContraception ||
                 pregnancyTest != com.domina.cycle.data.model.PregnancyTest.NOT_TESTED
+
+        private fun triEmoji(t: Int) = when (t) { 1 -> "🌱"; 2 -> "🌷"; else -> "🌳" }
+        private fun weekOf(due: LocalDate, date: LocalDate): Int =
+            (java.time.temporal.ChronoUnit.DAYS.between(due.minusDays(280), date) / 7).toInt()
 
         private fun rangeLabel(m: YearMonth, days: Set<Int>): String {
             val lo = days.min(); val hi = days.max()

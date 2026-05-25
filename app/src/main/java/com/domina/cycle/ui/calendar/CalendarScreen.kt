@@ -96,12 +96,20 @@ fun CalendarScreen(
 
         Spacer(Modifier.height(10.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            LegendDot("Period", cs.secondaryContainer, filled = true)
-            LegendDot("Predicted", cs.secondary, filled = false)
-            LegendDot("Fertile", cs.tertiaryContainer, filled = true)
-            LegendDot("Ovulation", cs.tertiary, filled = true)
-            LegendDot("Today", cs.primary, filled = false)
-            LegendHeart("Intimacy")
+            if (currentState.isPregnancy) {
+                LegendDot("Trimester 1", cs.tertiaryContainer, filled = true)
+                LegendDot("Trimester 2", cs.secondaryContainer, filled = true)
+                LegendDot("Trimester 3", cs.primaryContainer, filled = true)
+                LegendHeart("Intimacy")
+                LegendDot("Today", cs.primary, filled = false)
+            } else {
+                LegendDot("Period", cs.secondaryContainer, filled = true)
+                LegendDot("Predicted", cs.secondary, filled = false)
+                LegendDot("Fertile", cs.tertiaryContainer, filled = true)
+                LegendDot("Ovulation", cs.tertiary, filled = true)
+                LegendHeart("Intimacy")
+                LegendDot("Today", cs.primary, filled = false)
+            }
         }
 
         Spacer(Modifier.height(10.dp))
@@ -153,7 +161,15 @@ private fun DayCell(day: Int, s: CalendarUiState, cs: ColorScheme, onClick: () -
     val isPredicted = day in s.predictedPeriodDays
     val isToday = day == s.today
 
+    val triTint = s.trimesterDays[day]?.let { tri ->
+        when (tri) {
+            1 -> cs.tertiaryContainer.copy(alpha = 0.35f)
+            2 -> cs.secondaryContainer.copy(alpha = 0.40f)
+            else -> cs.primaryContainer.copy(alpha = 0.40f)
+        }
+    }
     val fill = when {
+        triTint != null -> triTint
         isPeriod -> cs.secondaryContainer
         isOvulation -> cs.tertiary
         isFertile -> cs.tertiaryContainer
