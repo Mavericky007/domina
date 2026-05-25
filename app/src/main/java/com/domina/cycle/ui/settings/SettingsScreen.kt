@@ -91,6 +91,9 @@ fun SettingsScreen(
         ToggleRow("Fertility alerts", rem.fertilityAlerts) { vm.updateReminders(rem.copy(fertilityAlerts = it)) }
         ToggleRow("Daily logging nudge (8 PM)", rem.dailyNudge) { vm.updateReminders(rem.copy(dailyNudge = it)) }
         ToggleRow("Mood check-ins (3×/day, 9am–9pm)", rem.checkIns) { vm.updateReminders(rem.copy(checkIns = it)) }
+        ToggleRow("Period logging reminders (2×/day during your period)", rem.periodLogReminders) {
+            vm.updateReminders(rem.copy(periodLogReminders = it))
+        }
         Spacer(Modifier.height(16.dp))
         Text("Mode", style = MaterialTheme.typography.titleMedium)
         val mode by vm.mode.collectAsStateWithLifecycle()

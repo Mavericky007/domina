@@ -10,4 +10,5 @@ data class ReminderSettings(
     val periodLeadDays: Int = 2,
     val morningHour: Int = 9,
     val checkIns: Boolean = false,
+    val periodLogReminders: Boolean = true,
 )

@@ -17,5 +17,11 @@ class ReminderSettingsMappingTest {
         assertThat(s.periodAlerts).isTrue()
         assertThat(s.dailyNudge).isFalse()
         assertThat(s.dailyNudgeTime).isEqualTo(LocalTime.of(20, 0))
+        assertThat(s.periodLogReminders).isTrue()
+    }
+
+    @Test fun periodLogRemindersCanBeDisabled() {
+        val s = ReminderSettings(periodLogReminders = false)
+        assertThat(s.periodLogReminders).isFalse()
     }
 }
