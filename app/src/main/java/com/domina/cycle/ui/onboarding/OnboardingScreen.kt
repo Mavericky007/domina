@@ -70,7 +70,7 @@ fun OnboardingScreen(
                 DateField("Date of birth", dob, age(dob)) { dob = it }
                 Spacer(Modifier.height(16.dp))
                 FieldLabel("Height")
-                HeightField(heightCm) { heightCm = it }
+                key(prefilled) { HeightField(heightCm) { heightCm = it } }
             } else when (step) {
                 0 -> {
                     Spacer(Modifier.height(24.dp))
