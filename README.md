@@ -17,8 +17,9 @@ health data to their clouds. Domina does the opposite: **your data never leaves 
 
 ## ⬇️ Download
 
-**[⬇️ Download the latest APK](https://github.com/Mavericky007/domina/releases/latest)** → on the release
-page, tap the `.apk` asset under **Assets** to download it to your phone.
+**[⬇️ Download the latest APK](https://github.com/Mavericky007/domina/releases/latest/download/domina.apk)**
+— downloads straight to your phone. (Or browse every version on the
+[releases page](https://github.com/Mavericky007/domina/releases).)
 
 Then to install (sideload):
 
