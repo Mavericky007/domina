@@ -13,4 +13,5 @@ object Destinations {
     const val WEIGHT = "weight"
     const val CHECKLIST = "checklist"
     const val PROFILE = "profile"
+    const val CHANGE_PIN = "change_pin"
 }

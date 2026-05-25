@@ -1,7 +1,6 @@
 package com.domina.cycle.ui.lock
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,38 +10,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun LockScreen(
-    hasPin: Boolean,
-    error: Boolean,
-    onPinEntered: (String) -> Unit,
-    onErrorShown: () -> Unit,
-    onUseBiometric: () -> Unit,
+fun ChangePinScreen(
+    onDone: () -> Unit,
+    vm: ChangePinViewModel = hiltViewModel(),
 ) {
+    var stage by remember { mutableStateOf(0) } // 0 = enter new, 1 = confirm
+    var first by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
+    var mismatch by remember { mutableStateOf(false) }
     val shake = remember { Animatable(0f) }
 
-    // Auto-submit the moment the PIN is complete — no button to tap.
-    LaunchedEffect(pin) {
-        if (pin.length == PIN_LENGTH) onPinEntered(pin)
-    }
-
-    // Wrong PIN: shake the slots, clear them, show a message, then ack the error.
-    LaunchedEffect(error) {
-        if (error) {
+    LaunchedEffect(mismatch) {
+        if (mismatch) {
             shake.animateTo(0f, pinShakeSpec())
-            pin = ""
-            showError = true
-            onErrorShown()
+            pin = ""; first = ""; stage = 0
+            mismatch = false
         }
     }
 
+    fun process(completed: String) {
+        if (stage == 0) {
+            first = completed
+            pin = ""
+            stage = 1
+        } else {
+            if (completed == first) vm.save(completed, onDone) else mismatch = true
+        }
+    }
     fun onDigit(d: Int) {
         if (pin.length < PIN_LENGTH) {
-            pin += d.toString()
-            showError = false
+            val next = pin + d
+            pin = next
+            if (next.length == PIN_LENGTH) process(next)
         }
     }
     fun onBackspace() {
@@ -50,32 +52,32 @@ fun LockScreen(
     }
 
     Column(
-        Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 32.dp),
+        Modifier.fillMaxSize().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(48.dp))
-        Text("🌙", fontSize = 48.sp)
+        Spacer(Modifier.height(40.dp))
+        Text("🔐", fontSize = 40.sp)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Domina",
-            style = MaterialTheme.typography.headlineMedium,
+            if (stage == 0) "Choose a new PIN" else "Confirm your PIN",
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            if (hasPin) "Welcome back 💛" else "Create a 4-digit PIN to keep your data private 💛",
+            if (stage == 0) "Enter a new 4-digit PIN" else "Re-enter it to confirm",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(36.dp))
         PinSlots(filledCount = pin.length, translationX = shake.value)
         Box(Modifier.height(28.dp).padding(top = 8.dp), contentAlignment = Alignment.Center) {
-            if (showError) {
+            if (mismatch) {
                 Text(
-                    "Incorrect PIN. Try again.",
+                    "PINs didn't match. Try again.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -84,11 +86,6 @@ fun LockScreen(
 
         Spacer(Modifier.weight(1f))
         NumberPad(onDigit = ::onDigit, onBackspace = ::onBackspace)
-
-        if (hasPin) {
-            Spacer(Modifier.height(20.dp))
-            TextButton(onClick = onUseBiometric) { Text("Use fingerprint / face") }
-        }
         Spacer(Modifier.height(16.dp))
     }
 }

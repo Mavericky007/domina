@@ -97,7 +97,11 @@ fun AppNav() {
                     onOpenMeds = { nav.navigate(Destinations.MEDS) },
                     onOpenAppointments = { nav.navigate(Destinations.APPOINTMENTS) },
                     onEditProfile = { nav.navigate(Destinations.PROFILE) },
+                    onChangePin = { nav.navigate(Destinations.CHANGE_PIN) },
                 )
+            }
+            composable(Destinations.CHANGE_PIN) {
+                com.domina.cycle.ui.lock.ChangePinScreen(onDone = { nav.popBackStack() })
             }
             composable(Destinations.PROFILE) {
                 com.domina.cycle.ui.onboarding.OnboardingScreen(isEdit = true, onDone = { nav.popBackStack() })

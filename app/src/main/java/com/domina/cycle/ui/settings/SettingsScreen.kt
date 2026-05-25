@@ -26,6 +26,7 @@ fun SettingsScreen(
     onOpenMeds: () -> Unit = {},
     onOpenAppointments: () -> Unit = {},
     onEditProfile: () -> Unit = {},
+    onChangePin: () -> Unit = {},
     vm: SettingsViewModel = hiltViewModel(),
 ) {
     val theme by vm.theme.collectAsStateWithLifecycle()
@@ -151,6 +152,13 @@ fun SettingsScreen(
         Spacer(Modifier.height(16.dp))
         Text("Doctor report", style = MaterialTheme.typography.titleMedium)
         Button(onClick = { createPdf.launch("domina-cycle-report.pdf") }) { Text("Export PDF for my doctor") }
+        Spacer(Modifier.height(16.dp))
+        Text("Security", style = MaterialTheme.typography.titleMedium)
+        ListItem(
+            headlineContent = { Text("Change PIN") },
+            supportingContent = { Text("Set a new 4-digit unlock PIN") },
+            trailingContent = { TextButton(onClick = onChangePin) { Text("Change") } },
+        )
         Spacer(Modifier.height(16.dp))
         Text("Privacy", style = MaterialTheme.typography.titleMedium)
         val discreet by vm.discreetIcon.collectAsStateWithLifecycle()
