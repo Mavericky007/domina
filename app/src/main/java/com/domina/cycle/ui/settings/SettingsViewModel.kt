@@ -76,6 +76,12 @@ class SettingsViewModel @Inject constructor(
     private val _update = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
     val update: StateFlow<UpdateUiState> = _update.asStateFlow()
     val download: StateFlow<ApkUpdater.State> = apkUpdater.state
+    fun pendingUpdateVersion(): String? = apkUpdater.pendingVersion()
+
+    init {
+        // Re-attach to a download that was running / finished while the app was away.
+        apkUpdater.syncFromPending()
+    }
 
     fun checkForUpdates() {
         _update.value = UpdateUiState.Checking
@@ -88,7 +94,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun downloadUpdate(url: String) = apkUpdater.startUpdate(url)
+    fun downloadUpdate(url: String, version: String) = apkUpdater.startUpdate(url, version)
+    fun installUpdate() = apkUpdater.install()
+    fun cancelDownload() = apkUpdater.cancel()
+    fun retryDownload() = apkUpdater.retry()
     fun dismissDownloadError() = apkUpdater.reset()
 
     fun setTheme(t: ThemePreference) { viewModelScope.launch { settings.setTheme(t) } }

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -32,6 +33,13 @@ import java.time.LocalDate
 fun AppNav() {
     val nav = rememberNavController()
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
+    // Tab switches: reuse a single entry per tab (don't stack duplicates / recreate ViewModels),
+    // and save/restore each tab's state.
+    fun goTab(route: String) = nav.navigate(route) {
+        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
     Scaffold(bottomBar = {
         NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
             val navColors = NavigationBarItemDefaults.colors(
@@ -43,28 +51,28 @@ fun AppNav() {
             )
             NavigationBarItem(
                 selected = currentRoute == Destinations.TODAY || currentRoute == null,
-                onClick = { nav.navigate(Destinations.TODAY) },
+                onClick = { goTab(Destinations.TODAY) },
                 icon = { Icon(Icons.Filled.Home, null) },
                 label = { Text("Today") },
                 colors = navColors,
             )
             NavigationBarItem(
                 selected = currentRoute == Destinations.CALENDAR,
-                onClick = { nav.navigate(Destinations.CALENDAR) },
+                onClick = { goTab(Destinations.CALENDAR) },
                 icon = { Icon(Icons.Filled.CalendarMonth, null) },
                 label = { Text("Calendar") },
                 colors = navColors,
             )
             NavigationBarItem(
                 selected = currentRoute == Destinations.INSIGHTS,
-                onClick = { nav.navigate(Destinations.INSIGHTS) },
+                onClick = { goTab(Destinations.INSIGHTS) },
                 icon = { Icon(Icons.Filled.Insights, null) },
                 label = { Text("Insights") },
                 colors = navColors,
             )
             NavigationBarItem(
                 selected = currentRoute == Destinations.SETTINGS,
-                onClick = { nav.navigate(Destinations.SETTINGS) },
+                onClick = { goTab(Destinations.SETTINGS) },
                 icon = { Icon(Icons.Filled.Settings, null) },
                 label = { Text("Settings") },
                 colors = navColors,

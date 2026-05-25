@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.domina.cycle.data.prefs.ThemePreference
+import com.domina.cycle.data.update.ReleaseInfo
+import com.domina.cycle.update.ApkUpdater
 
 @Composable
 fun SettingsScreen(
@@ -175,28 +177,36 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
 
-        when (val st = updateState) {
-            is SettingsViewModel.UpdateUiState.Checking ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(10.dp))
-                    Text("Checking for updates…", style = MaterialTheme.typography.bodyMedium)
+        // Active download / install state comes from the singleton updater, so it survives
+        // leaving & re-entering Settings and even an app restart.
+        when (val d = downloadState) {
+            is ApkUpdater.State.Downloading -> DownloadProgress(d, vm)
+            ApkUpdater.State.ReadyToInstall -> ReadyToInstallCard(vm)
+            ApkUpdater.State.Installing ->
+                Text("Opening the installer…", style = MaterialTheme.typography.bodyMedium)
+            is ApkUpdater.State.Failed -> DownloadFailedCard(d.message, vm)
+            ApkUpdater.State.Idle -> {
+                when (val st = updateState) {
+                    is SettingsViewModel.UpdateUiState.Checking ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(10.dp))
+                            Text("Checking for updates…", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    is SettingsViewModel.UpdateUiState.UpToDate ->
+                        Text("You're on the latest version 💛", style = MaterialTheme.typography.bodyMedium)
+                    is SettingsViewModel.UpdateUiState.Error ->
+                        Text(st.message, style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error)
+                    is SettingsViewModel.UpdateUiState.Available -> UpdateAvailableCard(st.release, vm)
+                    SettingsViewModel.UpdateUiState.Idle -> {}
                 }
-            is SettingsViewModel.UpdateUiState.UpToDate ->
-                Text("You're on the latest version 💛", style = MaterialTheme.typography.bodyMedium)
-            is SettingsViewModel.UpdateUiState.Error ->
-                Text(st.message, style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error)
-            is SettingsViewModel.UpdateUiState.Available -> UpdateAvailable(st.release, downloadState, vm)
-            SettingsViewModel.UpdateUiState.Idle -> {}
-        }
-
-        if (updateState !is SettingsViewModel.UpdateUiState.Available) {
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = vm::checkForUpdates,
-                enabled = updateState !is SettingsViewModel.UpdateUiState.Checking,
-            ) { Text("Check for updates") }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = vm::checkForUpdates,
+                    enabled = updateState !is SettingsViewModel.UpdateUiState.Checking,
+                ) { Text("Check for updates") }
+            }
         }
 
         message?.let { msg ->
@@ -238,55 +248,85 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun UpdateAvailable(
-    release: com.domina.cycle.data.update.ReleaseInfo,
-    download: com.domina.cycle.update.ApkUpdater.State,
-    vm: SettingsViewModel,
-) {
-    val cs = MaterialTheme.colorScheme
+private fun UpdateCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = cs.tertiaryContainer),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Text("🌙 Update available — v${release.version}",
-                style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer)
-            if (release.notes.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
-                Text(release.notes.lineSequence().take(6).joinToString("\n"),
-                    style = MaterialTheme.typography.bodySmall, color = cs.onTertiaryContainer)
-            }
-            Spacer(Modifier.height(12.dp))
-            when (download) {
-                is com.domina.cycle.update.ApkUpdater.State.Downloading -> {
-                    Text("Downloading… ${download.percent}%",
-                        style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
-                    Spacer(Modifier.height(6.dp))
-                    LinearProgressIndicator(
-                        progress = { download.percent / 100f },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                is com.domina.cycle.update.ApkUpdater.State.Installing ->
-                    Text("Opening the installer…",
-                        style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
-                is com.domina.cycle.update.ApkUpdater.State.Failed -> {
-                    Text(download.message, style = MaterialTheme.typography.bodyMedium, color = cs.error)
-                    Spacer(Modifier.height(6.dp))
-                    Button(
-                        onClick = { release.apkUrl?.let(vm::downloadUpdate) },
-                        enabled = release.apkUrl != null,
-                    ) { Text("Try again") }
-                }
-                com.domina.cycle.update.ApkUpdater.State.Idle -> {
-                    if (release.apkUrl != null) {
-                        Button(onClick = { vm.downloadUpdate(release.apkUrl) }) { Text("Download & install") }
-                    } else {
-                        Text("No APK attached to this release.",
-                            style = MaterialTheme.typography.bodySmall, color = cs.onTertiaryContainer)
-                    }
-                }
-            }
+        Column(Modifier.padding(16.dp), content = content)
+    }
+}
+
+@Composable
+private fun UpdateAvailableCard(release: ReleaseInfo, vm: SettingsViewModel) {
+    val cs = MaterialTheme.colorScheme
+    UpdateCard {
+        Text("🌙 Update available — v${release.version}",
+            style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer)
+        if (release.notes.isNotBlank()) {
+            Spacer(Modifier.height(6.dp))
+            Text(release.notes.lineSequence().take(6).joinToString("\n"),
+                style = MaterialTheme.typography.bodySmall, color = cs.onTertiaryContainer)
+        }
+        Spacer(Modifier.height(12.dp))
+        if (release.apkUrl != null) {
+            Button(onClick = { vm.downloadUpdate(release.apkUrl, release.version) }) { Text("Download & install") }
+        } else {
+            Text("No APK attached to this release.",
+                style = MaterialTheme.typography.bodySmall, color = cs.onTertiaryContainer)
+        }
+    }
+}
+
+@Composable
+private fun DownloadProgress(state: ApkUpdater.State.Downloading, vm: SettingsViewModel) {
+    val cs = MaterialTheme.colorScheme
+    UpdateCard {
+        val ver = vm.pendingUpdateVersion()
+        Text(if (ver != null) "Downloading v$ver…" else "Downloading update…",
+            style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            if (state.waitingForNetwork) "Waiting for network — it'll resume automatically." else "${state.percent}%",
+            style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer,
+        )
+        Spacer(Modifier.height(6.dp))
+        LinearProgressIndicator(progress = { state.percent / 100f }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(10.dp))
+        TextButton(onClick = vm::cancelDownload) { Text("Cancel") }
+    }
+}
+
+@Composable
+private fun ReadyToInstallCard(vm: SettingsViewModel) {
+    val cs = MaterialTheme.colorScheme
+    UpdateCard {
+        val ver = vm.pendingUpdateVersion()
+        Text(if (ver != null) "Update ready — v$ver 💛" else "Update ready 💛",
+            style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer)
+        Spacer(Modifier.height(6.dp))
+        Text("Tap install, then confirm on the system screen.",
+            style = MaterialTheme.typography.bodySmall, color = cs.onTertiaryContainer)
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = vm::installUpdate) { Text("Install now") }
+            TextButton(onClick = vm::cancelDownload) { Text("Dismiss") }
+        }
+    }
+}
+
+@Composable
+private fun DownloadFailedCard(message: String, vm: SettingsViewModel) {
+    val cs = MaterialTheme.colorScheme
+    UpdateCard {
+        Text("Update didn't finish",
+            style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer)
+        Spacer(Modifier.height(6.dp))
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = cs.error)
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = vm::retryDownload) { Text("Try again") }
+            TextButton(onClick = vm::dismissDownloadError) { Text("Dismiss") }
         }
     }
 }
