@@ -5,28 +5,47 @@
 ![Platform](https://img.shields.io/badge/platform-Android%208.0%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20·%20Material%203-4285F4)
-![Privacy](https://img.shields.io/badge/privacy-no%20INTERNET%20permission-success)
+![Privacy](https://img.shields.io/badge/privacy-data%20stays%20on%20device-success)
 ![Storage](https://img.shields.io/badge/storage-SQLCipher%20encrypted-blue)
 ![Price](https://img.shields.io/badge/price-free-brightgreen)
+[![Latest release](https://img.shields.io/github/v/release/Mavericky007/domina?label=latest&color=3DDC84&logo=android&logoColor=white)](https://github.com/Mavericky007/domina/releases/latest)
 
-Built as a personal app — a gift for my wife — because the popular trackers (Flo, Lively, and friends)
-send deeply personal health data to their clouds. Domina does the opposite: **your data never leaves
-your device.** 💛
+Built as a personal app, because the popular trackers (Flo, Lively, and friends) send deeply personal
+health data to their clouds. Domina does the opposite: **your data never leaves your device.** 💛
+
+---
+
+## ⬇️ Download
+
+**[⬇️ Download the latest APK](https://github.com/Mavericky007/domina/releases/latest)** → on the release
+page, tap the `.apk` asset under **Assets** to download it to your phone.
+
+Then to install (sideload):
+
+1. Open the downloaded `domina-*.apk`.
+2. If prompted, allow installing from this source ("Install unknown apps").
+3. On first launch, set a PIN — and you're in. 💛
+
+Once installed, future updates are one tap from inside the app: **Settings → Check for updates**.
+
+> Android only. Requires Android 8.0+. The APK is signed; updates install in place without losing data.
 
 ---
 
 ## 🔒 100% private & offline
 
-Domina is designed so your data *can't* leak, by construction:
+Domina keeps your health data on your device, by design:
 
-- 🚫 **No `INTERNET` permission at all.** The app is physically incapable of sending anything off the
-  device — it's not "we promise not to," it's "it literally can't."
+- 🚫 **Your data is never uploaded.** Cycle logs live only on the phone — there's no server, no account,
+  and no telemetry. The app's *only* network use is an **optional, on-demand update check**
+  (Settings → Check for updates) that contacts GitHub and sends **none** of your data.
 - 🔐 **Encrypted at rest** with SQLCipher; the database key is sealed in the **Android Keystore**.
 - 👆 **Biometric + PIN lock** with auto-lock when you leave the app.
 - 💾 **Encrypted backups you control** — export a passphrase-protected file anywhere *you* choose
   (Drive, email-to-self, SD); restore it on any phone. No cloud account, ever.
 
-> Everything below works fully offline, on a plane, forever. There is no server, no sign-up, no telemetry.
+> Everything works fully offline — no account, no telemetry, no server storing your data. The only time
+> Domina touches the network is that optional update check, and only when you tap it.
 
 ---
 
@@ -49,6 +68,8 @@ Domina is designed so your data *can't* leak, by construction:
   on-device pattern insights ("cramps tend to show up in your menstrual phase").
 - **🎨 Themes** — Soft & Sweet, Bright & Joyful, Warm & Cozy.
 - **📄 Doctor report** — export a clean PDF summary for an OB/GYN visit.
+- **🔄 In-app updates** — check for and install new versions from inside the app (Settings → Check for
+  updates), the only feature that uses the network — on demand, no data sent.
 
 ---
 
