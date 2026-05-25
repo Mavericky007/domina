@@ -53,7 +53,7 @@ fun CalendarScreen(
     fun monthOf(page: Int): YearMonth = anchor.plusMonths((page - BASE_PAGE).toLong())
     val currentMonth by remember { derivedStateOf { monthOf(pager.currentPage) } }
     val currentState = remember(currentMonth, data) {
-        CalendarViewModel.buildState(currentMonth, data.logs, data.today)
+        CalendarViewModel.buildState(currentMonth, data.logs, data.today, data.mode, data.dueDate)
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
@@ -89,7 +89,7 @@ fun CalendarScreen(
             modifier = Modifier.fillMaxWidth().height(CAL_ROW_HEIGHT * weeks),
             verticalAlignment = Alignment.Top,
         ) { page ->
-            val st = remember(page, data) { CalendarViewModel.buildState(monthOf(page), data.logs, data.today) }
+            val st = remember(page, data) { CalendarViewModel.buildState(monthOf(page), data.logs, data.today, data.mode, data.dueDate) }
             MonthGrid(st, cs, onOpenDay)
         }
 

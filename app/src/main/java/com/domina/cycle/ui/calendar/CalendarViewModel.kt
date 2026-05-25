@@ -5,11 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.domina.cycle.data.model.DayLog
 import com.domina.cycle.data.model.FlowIntensity
 import com.domina.cycle.data.model.Mood
+import com.domina.cycle.data.prefs.SettingsRepository
 import com.domina.cycle.data.repository.DayLogRepository
 import com.domina.cycle.domain.prediction.CyclePredictor
-import com.domina.cycle.domain.prediction.CycleProjection
-import com.domina.cycle.domain.prediction.CycleRisk
+import com.domina.cycle.domain.prediction.CycleForecast
 import com.domina.cycle.domain.prediction.PeriodDeriver
+import com.domina.cycle.domain.prediction.CycleRisk
+import com.domina.cycle.domain.pregnancy.AppMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import java.time.LocalDate
@@ -43,16 +45,25 @@ data class CalendarUiState(
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     repository: DayLogRepository,
+    settings: SettingsRepository,
 ) : ViewModel() {
 
     /** Raw history the UI pages over; one observation feeds every visible month. */
-    data class CalendarData(val logs: List<DayLog>, val today: LocalDate)
+    data class CalendarData(
+        val logs: List<DayLog>,
+        val today: LocalDate,
+        val mode: AppMode = AppMode.CYCLE,
+        val dueDate: LocalDate? = null,
+    )
 
     private val today = LocalDate.now()
 
     val data: StateFlow<CalendarData> =
-        repository.observeRange(today.minusDays(400), today.plusDays(400))
-            .map { CalendarData(it, today) }
+        combine(
+            repository.observeRange(today.minusDays(400), today.plusDays(400)),
+            settings.appMode,
+            settings.dueDate,
+        ) { logs, mode, due -> CalendarData(logs, today, mode, due) }
             .stateIn(
                 viewModelScope, SharingStarted.WhileSubscribed(5000),
                 CalendarData(emptyList(), today),
@@ -67,13 +78,13 @@ class CalendarViewModel @Inject constructor(
             Mood.ENERGETIC to "⚡", Mood.TIRED to "😴",
         )
 
-        fun buildState(m: YearMonth, logs: List<DayLog>, today: LocalDate): CalendarUiState {
+        fun buildState(m: YearMonth, logs: List<DayLog>, today: LocalDate, mode: AppMode, dueDate: LocalDate?): CalendarUiState {
             val flowDates = logs.filter { it.flow != FlowIntensity.NONE }.map { it.date }
             val periods = PeriodDeriver.derive(flowDates)
             val pred = CyclePredictor.predict(periods, today)
-            val outlook = CycleRisk.analyze(pred, periods, logs, today)
-            val marks = CycleProjection.marksFor(
-                periods, m, pred.averageCycleLength, pred.averagePeriodLength, today, outlook.delayDays,
+            val outlook = CycleForecast.outlookFor(mode, pred, periods, logs, today)
+            val marks = CycleForecast.marksFor(
+                mode, periods, m, pred.averageCycleLength, pred.averagePeriodLength, today, outlook.delayDays,
             )
             val loggedDays = flowDates.filter { YearMonth.from(it) == m }.map { it.dayOfMonth }.toSet()
 
