@@ -36,6 +36,7 @@ import java.util.Locale
 
 private const val BASE_PAGE = 6000
 private const val PAGE_COUNT = 12001
+private val CAL_ROW_HEIGHT = 46.dp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -81,7 +82,13 @@ fun CalendarScreen(
         Spacer(Modifier.height(4.dp))
 
         // ── Swipeable month grid (smooth paging; taps open the day) ────
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().height(276.dp)) { page ->
+        // Height follows the visible month's week count so 5-week months don't leave a gap.
+        val weeks = remember(currentState) { (currentState.cells.size + 6) / 7 }
+        HorizontalPager(
+            state = pager,
+            modifier = Modifier.fillMaxWidth().height(CAL_ROW_HEIGHT * weeks),
+            verticalAlignment = Alignment.Top,
+        ) { page ->
             val st = remember(page, data) { CalendarViewModel.buildState(monthOf(page), data.logs, data.today) }
             MonthGrid(st, cs, onOpenDay)
         }
@@ -120,10 +127,9 @@ fun CalendarScreen(
 
 @Composable
 private fun MonthGrid(s: CalendarUiState, cs: ColorScheme, onOpenDay: (LocalDate) -> Unit) {
-    val cells = s.cells + List((42 - s.cells.size).coerceAtLeast(0)) { null }  // pad to 6 rows for uniform height
-    Column(Modifier.fillMaxSize()) {
-        cells.chunked(7).forEach { week ->
-            Row(Modifier.fillMaxWidth().weight(1f)) {
+    Column(Modifier.fillMaxWidth()) {
+        s.cells.chunked(7).forEach { week ->
+            Row(Modifier.fillMaxWidth().height(CAL_ROW_HEIGHT)) {
                 week.forEach { day ->
                     Box(
                         Modifier.weight(1f).fillMaxHeight().padding(3.dp),
