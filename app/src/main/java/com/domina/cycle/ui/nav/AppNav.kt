@@ -1,5 +1,6 @@
 package com.domina.cycle.ui.nav
 
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -9,10 +10,13 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.domina.cycle.ui.calendar.CalendarScreen
 import com.domina.cycle.ui.log.LogScreen
 import com.domina.cycle.ui.appointments.AppointmentsScreen
@@ -31,7 +35,7 @@ fun AppNav() {
     val nav = rememberNavController()
     val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
     Scaffold(bottomBar = {
-        NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+        NavigationBar(containerColor = MaterialTheme.colorScheme.surface, modifier = Modifier.height(72.dp)) {
             val navColors = NavigationBarItemDefaults.colors(
                 selectedIconColor = MaterialTheme.colorScheme.onPrimary,
                 selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -72,16 +76,24 @@ fun AppNav() {
         NavHost(nav, startDestination = Destinations.TODAY, modifier = Modifier.padding(padding)) {
             composable(Destinations.TODAY) {
                 TodayScreen(
-                    onLogToday = { nav.navigate(Destinations.LOG) },
+                    onLogToday = { nav.navigate("${Destinations.LOG}/${LocalDate.now().toEpochDay()}") },
                     onOpenKick = { nav.navigate(Destinations.KICK) },
                     onOpenContractions = { nav.navigate(Destinations.CONTRACTIONS) },
                     onOpenWeight = { nav.navigate(Destinations.WEIGHT) },
                     onOpenChecklist = { nav.navigate(Destinations.CHECKLIST) },
                 )
             }
-            composable(Destinations.CALENDAR) { CalendarScreen() }
+            composable(Destinations.CALENDAR) {
+                CalendarScreen(onOpenDay = { d -> nav.navigate("${Destinations.LOG}/${d.toEpochDay()}") })
+            }
             composable(Destinations.INSIGHTS) { InsightsScreen() }
-            composable(Destinations.LOG) { LogScreen(date = LocalDate.now(), onSaved = { nav.popBackStack() }) }
+            composable(
+                "${Destinations.LOG}/{epochDay}",
+                arguments = listOf(navArgument("epochDay") { type = NavType.LongType }),
+            ) { entry ->
+                val epoch = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
+                LogScreen(date = LocalDate.ofEpochDay(epoch), onSaved = { nav.popBackStack() })
+            }
             composable(Destinations.SETTINGS) {
                 SettingsScreen(
                     onOpenMeds = { nav.navigate(Destinations.MEDS) },

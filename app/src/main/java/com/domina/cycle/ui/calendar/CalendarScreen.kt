@@ -2,17 +2,23 @@ package com.domina.cycle.ui.calendar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,25 +28,50 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
+private const val BASE_PAGE = 6000
+private const val PAGE_COUNT = 12001
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CalendarScreen(vm: CalendarViewModel = hiltViewModel()) {
-    val s by vm.state.collectAsStateWithLifecycle()
+fun CalendarScreen(
+    onOpenDay: (LocalDate) -> Unit = {},
+    vm: CalendarViewModel = hiltViewModel(),
+) {
+    val data by vm.data.collectAsStateWithLifecycle()
     val cs = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = vm::prevMonth) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous") }
+    val scope = rememberCoroutineScope()
+    val anchor = remember { YearMonth.now() }
+    val pager = rememberPagerState(initialPage = BASE_PAGE) { PAGE_COUNT }
+
+    fun monthOf(page: Int): YearMonth = anchor.plusMonths((page - BASE_PAGE).toLong())
+    val currentMonth by remember { derivedStateOf { monthOf(pager.currentPage) } }
+    val currentState = remember(currentMonth, data) {
+        CalendarViewModel.buildState(currentMonth, data.logs, data.today)
+    }
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        // ── Month header ───────────────────────────────────────────────
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 12.dp)) {
+            IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } }) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous")
+            }
             Text(
-                "${s.month.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${s.month.year}",
+                "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
                 Modifier.weight(1f), textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
             )
-            IconButton(onClick = vm::nextMonth) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next") }
+            IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } }) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next")
+            }
         }
-        Spacer(Modifier.height(8.dp))
+
+        // ── Weekday header (fixed) ─────────────────────────────────────
         Row(Modifier.fillMaxWidth()) {
             CalendarMonth.weekdayLabels.forEach { d ->
                 Text(d, Modifier.weight(1f), textAlign = TextAlign.Center,
@@ -48,53 +79,131 @@ fun CalendarScreen(vm: CalendarViewModel = hiltViewModel()) {
             }
         }
         Spacer(Modifier.height(4.dp))
-        LazyVerticalGrid(columns = GridCells.Fixed(7)) {
-            items(s.cells) { day ->
-                Box(Modifier.aspectRatio(1f).padding(3.dp), contentAlignment = Alignment.Center) {
-                    if (day != null) {
-                        val isPeriod = day in s.periodDays
-                        val isOvulation = day in s.ovulationDays
-                        val isFertile = day in s.fertileDays
-                        val isPredicted = day in s.predictedPeriodDays
-                        val isToday = day == s.today
 
-                        val fill = when {
-                            isPeriod -> cs.secondaryContainer
-                            isOvulation -> cs.tertiary
-                            isFertile -> cs.tertiaryContainer
-                            else -> cs.surfaceContainerHigh
-                        }
-                        val onFill = when {
-                            isPeriod -> cs.onSecondaryContainer
-                            isOvulation -> cs.onTertiary
-                            isFertile -> cs.onTertiaryContainer
-                            else -> cs.onSurface
-                        }
-                        val borderMod = when {
-                            isToday -> Modifier.border(2.dp, cs.primary, CircleShape)
-                            isPredicted -> Modifier.border(2.dp, cs.secondary, CircleShape)
-                            else -> Modifier
-                        }
-                        Box(
-                            Modifier.size(38.dp).clip(CircleShape).background(fill).then(borderMod),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                "$day", style = MaterialTheme.typography.bodyMedium, color = onFill,
-                                fontWeight = if (isToday || isPeriod || isOvulation) FontWeight.Bold else FontWeight.Normal,
-                            )
-                        }
-                    }
-                }
-            }
+        // ── Swipeable month grid (smooth paging; taps open the day) ────
+        HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth().height(276.dp)) { page ->
+            val st = remember(page, data) { CalendarViewModel.buildState(monthOf(page), data.logs, data.today) }
+            MonthGrid(st, cs, onOpenDay)
         }
-        Spacer(Modifier.height(16.dp))
+
+        Spacer(Modifier.height(10.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             LegendDot("Period", cs.secondaryContainer, filled = true)
             LegendDot("Predicted", cs.secondary, filled = false)
             LegendDot("Fertile", cs.tertiaryContainer, filled = true)
             LegendDot("Ovulation", cs.tertiary, filled = true)
             LegendDot("Today", cs.primary, filled = false)
+        }
+
+        Spacer(Modifier.height(10.dp))
+        HorizontalDivider(color = cs.outlineVariant)
+
+        // ── Scrollable activity list for the visible month ─────────────
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(vertical = 12.dp)) {
+            if (currentState.events.isEmpty()) {
+                item {
+                    Text(
+                        "Tap any day to log how she's feeling 💛",
+                        style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp).fillMaxWidth(), textAlign = TextAlign.Center,
+                    )
+                }
+            } else {
+                items(currentState.events) { ev -> EventRow(ev, cs, onClick = { ev.date?.let(onOpenDay) }) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonthGrid(s: CalendarUiState, cs: ColorScheme, onOpenDay: (LocalDate) -> Unit) {
+    val cells = s.cells + List((42 - s.cells.size).coerceAtLeast(0)) { null }  // pad to 6 rows for uniform height
+    Column(Modifier.fillMaxSize()) {
+        cells.chunked(7).forEach { week ->
+            Row(Modifier.fillMaxWidth().weight(1f)) {
+                week.forEach { day ->
+                    Box(
+                        Modifier.weight(1f).fillMaxHeight().padding(3.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (day != null) DayCell(day, s, cs) { onOpenDay(s.month.atDay(day)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayCell(day: Int, s: CalendarUiState, cs: ColorScheme, onClick: () -> Unit) {
+    val isPeriod = day in s.periodDays
+    val isOvulation = day in s.ovulationDays
+    val isFertile = day in s.fertileDays
+    val isPredicted = day in s.predictedPeriodDays
+    val isToday = day == s.today
+
+    val fill = when {
+        isPeriod -> cs.secondaryContainer
+        isOvulation -> cs.tertiary
+        isFertile -> cs.tertiaryContainer
+        else -> cs.surfaceContainerHigh
+    }
+    val onFill = when {
+        isPeriod -> cs.onSecondaryContainer
+        isOvulation -> cs.onTertiary
+        isFertile -> cs.onTertiaryContainer
+        else -> cs.onSurface
+    }
+    val borderMod = when {
+        isToday -> Modifier.border(2.dp, cs.primary, CircleShape)
+        isPredicted -> Modifier.border(2.dp, cs.secondary, CircleShape)
+        else -> Modifier
+    }
+    Box(
+        Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onClick).background(fill).then(borderMod),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "$day", style = MaterialTheme.typography.bodyMedium, color = onFill,
+            fontWeight = if (isToday || isPeriod || isOvulation) FontWeight.Bold else FontWeight.Normal,
+        )
+    }
+}
+
+@Composable
+private fun EventRow(ev: CalendarEvent, cs: ColorScheme, onClick: () -> Unit) {
+    val (dotColor, dotFilled) = when (ev.kind) {
+        CalEventKind.PREDICTED_PERIOD -> cs.secondary to false
+        CalEventKind.FERTILE -> cs.tertiaryContainer to true
+        CalEventKind.OVULATION -> cs.tertiary to true
+        CalEventKind.LOGGED -> cs.primary to true
+    }
+    val clickable = ev.date != null
+    Row(
+        Modifier.fillMaxWidth()
+            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(cs.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                Modifier.size(14.dp).clip(CircleShape)
+                    .then(if (dotFilled) Modifier.background(dotColor) else Modifier.border(2.dp, dotColor, CircleShape)),
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(ev.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(ev.detail, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+        }
+        if (clickable) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+                tint = cs.onSurfaceVariant,
+            )
         }
     }
 }
