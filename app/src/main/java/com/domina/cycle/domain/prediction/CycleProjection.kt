@@ -22,6 +22,7 @@ object CycleProjection {
         avgCycle: Int,
         avgPeriod: Int,
         today: LocalDate,
+        delayDays: Int = 0,   // shifts upcoming predictions later (e.g. after a morning-after pill)
     ): MonthMarks {
         if (periods.isEmpty() || avgCycle <= 0) return MonthMarks()
         val lastStart = periods.maxOf { it.start }
@@ -30,7 +31,8 @@ object CycleProjection {
         val ovulation = sortedSetOf<Int>()
         val monthEnd = month.atEndOfMonth()
 
-        fun mark(day: LocalDate, into: MutableSet<Int>) {
+        fun mark(rawDay: LocalDate, into: MutableSet<Int>) {
+            val day = rawDay.plusDays(delayDays.toLong())
             if (YearMonth.from(day) == month && !day.isBefore(today)) into.add(day.dayOfMonth)
         }
 

@@ -32,5 +32,9 @@ class LogViewModel @Inject constructor(
     fun setBbt(bbt: Double?) { _state.update { it.copy(bbt = bbt) } }
     fun setCervicalMucus(cm: CervicalMucus) { _state.update { it.copy(cervicalMucus = cm) } }
     fun setLhResult(lh: LhResult) { _state.update { it.copy(lhResult = lh) } }
+    fun setIntimacy(i: Intimacy) {
+        _state.update { it.copy(intimacy = if (it.intimacy == i) Intimacy.NONE else i) }
+    }
+    fun setEmergencyContraception(taken: Boolean) { _state.update { it.copy(emergencyContraception = taken) } }
     fun save() { viewModelScope.launch { repository.save(_state.value) } }
 }

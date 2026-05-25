@@ -3,6 +3,13 @@ package com.domina.cycle.data.db
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `day_logs` ADD COLUMN `intimacy` TEXT NOT NULL DEFAULT 'NONE'")
+        db.execSQL("ALTER TABLE `day_logs` ADD COLUMN `emergencyContraception` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

@@ -191,6 +191,7 @@ private fun EventRow(ev: CalendarEvent, cs: ColorScheme, onClick: () -> Unit) {
         CalEventKind.FERTILE -> cs.tertiaryContainer
         CalEventKind.OVULATION -> cs.tertiary
         CalEventKind.TODAY -> cs.primaryContainer
+        CalEventKind.ALERT -> cs.tertiaryContainer
         else -> cs.surfaceContainerHigh
     }
     val isToday = ev.kind == CalEventKind.TODAY

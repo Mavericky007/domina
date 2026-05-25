@@ -74,6 +74,20 @@ fun LogScreen(date: LocalDate, onSaved: () -> Unit, vm: LogViewModel = hiltViewM
             }
         }
 
+        Section("Intimacy") {
+            FilterChip(selected = state.intimacy == Intimacy.PROTECTED,
+                onClick = { vm.setIntimacy(Intimacy.PROTECTED) },
+                label = { Text("🛡️ protected") })
+            FilterChip(selected = state.intimacy == Intimacy.UNPROTECTED,
+                onClick = { vm.setIntimacy(Intimacy.UNPROTECTED) },
+                label = { Text("💗 unprotected") })
+        }
+        Section("Contraception") {
+            FilterChip(selected = state.emergencyContraception,
+                onClick = { vm.setEmergencyContraception(!state.emergencyContraception) },
+                label = { Text("💊 Morning-after pill") })
+        }
+
         Text("Basal body temperature (°C)", style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))

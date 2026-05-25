@@ -79,7 +79,9 @@ fun TodayScreen(
                 )
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    p.nextPeriodDate?.let { ChipInfo("🩸 Period", daysLabel(state.today, it)) }
+                    (state.outlook.adjustedNextPeriod ?: p.nextPeriodDate)?.let {
+                        ChipInfo("🩸 Period", daysLabel(state.today, it))
+                    }
                     p.fertileWindowStart?.let { ChipInfo("🌸 Fertile", daysLabel(state.today, it)) }
                 }
                 if (p.confidence == Confidence.LOW) {
@@ -90,6 +92,8 @@ fun TodayScreen(
                     )
                 }
             }
+
+            OutlookCard(state.outlook)
 
             state.guidance?.let { g ->
                 Spacer(Modifier.height(16.dp))
@@ -106,6 +110,34 @@ fun TodayScreen(
 @Composable
 private fun ChipInfo(label: String, value: String) {
     AssistChip(onClick = {}, label = { Text("$label · $value") })
+}
+
+@Composable
+private fun OutlookCard(o: com.domina.cycle.domain.prediction.CycleRisk.Outlook) {
+    val cs = MaterialTheme.colorScheme
+    val message: Pair<String, String>? = when (o.pregnancyChance) {
+        com.domina.cycle.domain.prediction.CycleRisk.PregnancyChance.LIKELY -> "💗 Pregnancy chance" to
+            "Your period is ${o.daysLate} days late and there was unprotected intimacy this cycle. A pregnancy test is worth taking 💛"
+        com.domina.cycle.domain.prediction.CycleRisk.PregnancyChance.POSSIBLE -> "💗 Keep an eye out" to
+            "Your period is ${o.daysLate} days late after unprotected intimacy this cycle. It may just be a late cycle — worth watching 💛"
+        else -> if (o.emergencyPillThisCycle) "💊 After the morning-after pill" to
+            "Your next period may arrive a few days later than usual — I've shifted the estimate. If it's more than a week late, take a test 💛"
+        else null
+    }
+    message?.let { (title, body) ->
+        Spacer(Modifier.height(16.dp))
+        Card(
+            Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = cs.tertiaryContainer),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    color = cs.onTertiaryContainer)
+                Spacer(Modifier.height(6.dp))
+                Text(body, style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
+            }
+        }
+    }
 }
 
 @Composable

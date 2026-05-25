@@ -33,6 +33,8 @@ private fun DayLog.toEntity() = DayLogEntity(
     libido = libido,
     sleepHours = sleepHours,
     weight = weight,
+    intimacy = intimacy.name,
+    emergencyContraception = emergencyContraception,
     note = note,
 )
 
@@ -48,5 +50,7 @@ private fun DayLogEntity.toModel() = DayLog(
     libido = libido,
     sleepHours = sleepHours,
     weight = weight,
+    intimacy = Intimacy.valueOf(intimacy),
+    emergencyContraception = emergencyContraception,
     note = note,
 )

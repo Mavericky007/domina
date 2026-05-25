@@ -16,5 +16,7 @@ data class DayLogEntity(
     val libido: Int? = null,
     val sleepHours: Double? = null,
     val weight: Double? = null,
+    val intimacy: String = "NONE",
+    val emergencyContraception: Boolean = false,
     val note: String = "",
 )

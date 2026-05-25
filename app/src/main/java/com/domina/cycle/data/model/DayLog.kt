@@ -14,10 +14,13 @@ data class DayLog(
     val libido: Int? = null,            // 0..3
     val sleepHours: Double? = null,
     val weight: Double? = null,
+    val intimacy: Intimacy = Intimacy.NONE,
+    val emergencyContraception: Boolean = false,   // morning-after pill taken
     val note: String = "",
 ) {
     fun isEmpty(): Boolean =
         mood == null && energy == null && flow == FlowIntensity.NONE && symptoms.isEmpty() &&
             bbt == null && cervicalMucus == null && lhResult == LhResult.NOT_TESTED &&
-            libido == null && sleepHours == null && weight == null && note.isBlank()
+            libido == null && sleepHours == null && weight == null &&
+            intimacy == Intimacy.NONE && !emergencyContraception && note.isBlank()
 }

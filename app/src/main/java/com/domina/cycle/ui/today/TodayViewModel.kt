@@ -30,6 +30,8 @@ data class TodayUiState(
     val prediction: CyclePrediction,
     val guidance: PhaseGuidance?,
     val todayLog: DayLog?,
+    val outlook: com.domina.cycle.domain.prediction.CycleRisk.Outlook =
+        com.domina.cycle.domain.prediction.CycleRisk.Outlook.EMPTY,
 ) {
     companion object {
         fun empty(today: LocalDate) = TodayUiState(
@@ -76,7 +78,8 @@ class TodayViewModel @Inject constructor(
             val prediction = CyclePredictor.predict(periods, today)
             val guidance = prediction.phase?.let { PhaseGuide.forPhase(it) }
             val todayLog = logs.firstOrNull { it.date == today }
-            return TodayUiState(today, prediction, guidance, todayLog)
+            val outlook = com.domina.cycle.domain.prediction.CycleRisk.analyze(prediction, periods, logs, today)
+            return TodayUiState(today, prediction, guidance, todayLog, outlook)
         }
 
         fun buildPregnancyState(mode: AppMode, dueDate: LocalDate?, today: LocalDate): PregnancyUiState? {

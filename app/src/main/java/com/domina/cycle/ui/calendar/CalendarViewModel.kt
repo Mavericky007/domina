@@ -8,6 +8,7 @@ import com.domina.cycle.data.model.Mood
 import com.domina.cycle.data.repository.DayLogRepository
 import com.domina.cycle.domain.prediction.CyclePredictor
 import com.domina.cycle.domain.prediction.CycleProjection
+import com.domina.cycle.domain.prediction.CycleRisk
 import com.domina.cycle.domain.prediction.PeriodDeriver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -16,7 +17,7 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-enum class CalEventKind { PERIOD, PREDICTED_PERIOD, FERTILE, OVULATION, NOTE, TODAY, HEADER }
+enum class CalEventKind { PERIOD, PREDICTED_PERIOD, FERTILE, OVULATION, NOTE, TODAY, HEADER, ALERT }
 
 data class CalendarEvent(
     val date: LocalDate?,   // tappable target; null for info rows / headers
@@ -70,7 +71,10 @@ class CalendarViewModel @Inject constructor(
             val flowDates = logs.filter { it.flow != FlowIntensity.NONE }.map { it.date }
             val periods = PeriodDeriver.derive(flowDates)
             val pred = CyclePredictor.predict(periods, today)
-            val marks = CycleProjection.marksFor(periods, m, pred.averageCycleLength, pred.averagePeriodLength, today)
+            val outlook = CycleRisk.analyze(pred, periods, logs, today)
+            val marks = CycleProjection.marksFor(
+                periods, m, pred.averageCycleLength, pred.averagePeriodLength, today, outlook.delayDays,
+            )
             val loggedDays = flowDates.filter { YearMonth.from(it) == m }.map { it.dayOfMonth }.toSet()
 
             val isCurrentMonth = YearMonth.from(today) == m
@@ -111,6 +115,20 @@ class CalendarViewModel @Inject constructor(
             val all = markerEvents + loggedEvents
             val events = buildList {
                 if (isCurrentMonth) {
+                    when {
+                        outlook.pregnancyChance == CycleRisk.PregnancyChance.LIKELY -> add(CalendarEvent(
+                            null, "💗", "Pregnancy chance",
+                            "Period ${outlook.daysLate}d late after unprotected intimacy — consider a test",
+                            CalEventKind.ALERT, today))
+                        outlook.pregnancyChance == CycleRisk.PregnancyChance.POSSIBLE -> add(CalendarEvent(
+                            null, "💗", "Keep an eye out",
+                            "Period ${outlook.daysLate}d late after unprotected intimacy this cycle",
+                            CalEventKind.ALERT, today))
+                        outlook.emergencyPillThisCycle -> add(CalendarEvent(
+                            null, "💊", "Morning-after pill logged",
+                            "Next period may arrive a few days later than usual",
+                            CalEventKind.ALERT, today))
+                    }
                     val todayLog = logs.firstOrNull { it.date == today }
                     add(CalendarEvent(today, "☀️", "Today · ${today.format(dayFmt)}",
                         todayLog?.takeIf { it.notable() }?.let { summarize(it) } ?: "No entry yet — tap to add",
@@ -146,7 +164,8 @@ class CalendarViewModel @Inject constructor(
             CalendarEvent(null, "", text, "", CalEventKind.HEADER, LocalDate.MIN)
 
         private fun DayLog.notable() =
-            flow != FlowIntensity.NONE || note.isNotBlank() || symptoms.isNotEmpty() || mood != null
+            flow != FlowIntensity.NONE || note.isNotBlank() || symptoms.isNotEmpty() || mood != null ||
+                intimacy != com.domina.cycle.data.model.Intimacy.NONE || emergencyContraception
 
         private fun rangeLabel(m: YearMonth, days: Set<Int>): String {
             val lo = days.min(); val hi = days.max()
@@ -158,6 +177,8 @@ class CalendarViewModel @Inject constructor(
                 if (log.flow != FlowIntensity.NONE) add("${log.flow.name.lowercase()} flow")
                 log.mood?.let { add(it.name.lowercase()) }
                 if (log.symptoms.isNotEmpty()) add(log.symptoms.joinToString(", "))
+                if (log.intimacy != com.domina.cycle.data.model.Intimacy.NONE) add("${log.intimacy.name.lowercase()} sex")
+                if (log.emergencyContraception) add("morning-after pill")
                 if (log.note.isNotBlank()) add("note")
                 log.bbt?.let { add("BBT $it°") }
             }

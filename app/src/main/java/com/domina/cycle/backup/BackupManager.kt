@@ -35,6 +35,8 @@ class BackupManager @Inject constructor(private val db: AppDatabase) {
                     it.sleepHours?.toString() ?: "",
                     it.weight?.toString() ?: "",
                     it.note,
+                    it.intimacy,
+                    it.emergencyContraception.toString(),
                 )
             },
             "cycle_events" to db.cycleEventDao().getAll().map {
@@ -92,6 +94,8 @@ class BackupManager @Inject constructor(private val db: AppDatabase) {
                     sleepHours = r[9].toDoubleOrNull(),
                     weight = r[10].toDoubleOrNull(),
                     note = r[11],
+                    intimacy = r.getOrNull(12)?.ifEmpty { null } ?: "NONE",
+                    emergencyContraception = r.getOrNull(13).toBoolean(),
                 )
             )
         }
