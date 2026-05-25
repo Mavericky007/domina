@@ -176,6 +176,7 @@ private fun DayCell(day: Int, s: CalendarUiState, cs: ColorScheme, onClick: () -
         else -> cs.surfaceContainerHigh
     }
     val onFill = when {
+        triTint != null -> cs.onSurface   // soft tint over surface — keep the default ink legible
         isPeriod -> cs.onSecondaryContainer
         isOvulation -> cs.onTertiary
         isFertile -> cs.onTertiaryContainer
@@ -192,7 +193,7 @@ private fun DayCell(day: Int, s: CalendarUiState, cs: ColorScheme, onClick: () -
     ) {
         Text(
             "$day", style = MaterialTheme.typography.bodyMedium, color = onFill,
-            fontWeight = if (isToday || isPeriod || isOvulation) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (isToday || (triTint == null && (isPeriod || isOvulation))) FontWeight.Bold else FontWeight.Normal,
         )
         if (day in s.intimacyDays) {
             Text("❤️", fontSize = 8.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 1.dp))
