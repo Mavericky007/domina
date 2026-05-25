@@ -33,6 +33,8 @@ fun SettingsScreen(
     val profileName by vm.userName.collectAsStateWithLifecycle()
     val profileDob by vm.birthDate.collectAsStateWithLifecycle()
     val profileHeight by vm.heightCm.collectAsStateWithLifecycle()
+    val updateState by vm.update.collectAsStateWithLifecycle()
+    val downloadState by vm.download.collectAsStateWithLifecycle()
 
     var pendingUri by remember { mutableStateOf<Uri?>(null) }
     var backupMode by remember { mutableStateOf("") } // "backup" or "restore"
@@ -146,6 +148,36 @@ fun SettingsScreen(
             }
             Switch(checked = discreet, onCheckedChange = { vm.setDiscreetIcon(it) })
         }
+        Spacer(Modifier.height(16.dp))
+        Text("App version", style = MaterialTheme.typography.titleMedium)
+        Text("Domina ${vm.appVersion}", style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(8.dp))
+
+        when (val st = updateState) {
+            is SettingsViewModel.UpdateUiState.Checking ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Checking for updates…", style = MaterialTheme.typography.bodyMedium)
+                }
+            is SettingsViewModel.UpdateUiState.UpToDate ->
+                Text("You're on the latest version 💛", style = MaterialTheme.typography.bodyMedium)
+            is SettingsViewModel.UpdateUiState.Error ->
+                Text(st.message, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error)
+            is SettingsViewModel.UpdateUiState.Available -> UpdateAvailable(st.release, downloadState, vm)
+            SettingsViewModel.UpdateUiState.Idle -> {}
+        }
+
+        if (updateState !is SettingsViewModel.UpdateUiState.Available) {
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = vm::checkForUpdates,
+                enabled = updateState !is SettingsViewModel.UpdateUiState.Checking,
+            ) { Text("Check for updates") }
+        }
+
         message?.let { msg ->
             LaunchedEffect(msg) {}
             Spacer(Modifier.height(8.dp))
@@ -181,6 +213,60 @@ fun SettingsScreen(
                 TextButton(onClick = { pendingUri = null; passphrase = "" }) { Text("Cancel") }
             },
         )
+    }
+}
+
+@Composable
+private fun UpdateAvailable(
+    release: com.domina.cycle.data.update.ReleaseInfo,
+    download: com.domina.cycle.update.ApkUpdater.State,
+    vm: SettingsViewModel,
+) {
+    val cs = MaterialTheme.colorScheme
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = cs.tertiaryContainer),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("🌙 Update available — v${release.version}",
+                style = MaterialTheme.typography.titleMedium, color = cs.onTertiaryContainer)
+            if (release.notes.isNotBlank()) {
+                Spacer(Modifier.height(6.dp))
+                Text(release.notes.lineSequence().take(6).joinToString("\n"),
+                    style = MaterialTheme.typography.bodySmall, color = cs.onTertiaryContainer)
+            }
+            Spacer(Modifier.height(12.dp))
+            when (download) {
+                is com.domina.cycle.update.ApkUpdater.State.Downloading -> {
+                    Text("Downloading… ${download.percent}%",
+                        style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
+                    Spacer(Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { download.percent / 100f },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                is com.domina.cycle.update.ApkUpdater.State.Installing ->
+                    Text("Opening the installer…",
+                        style = MaterialTheme.typography.bodyMedium, color = cs.onTertiaryContainer)
+                is com.domina.cycle.update.ApkUpdater.State.Failed -> {
+                    Text(download.message, style = MaterialTheme.typography.bodyMedium, color = cs.error)
+                    Spacer(Modifier.height(6.dp))
+                    Button(
+                        onClick = { release.apkUrl?.let(vm::downloadUpdate) },
+                        enabled = release.apkUrl != null,
+                    ) { Text("Try again") }
+                }
+                com.domina.cycle.update.ApkUpdater.State.Idle -> {
+                    if (release.apkUrl != null) {
+                        Button(onClick = { vm.downloadUpdate(release.apkUrl) }) { Text("Download & install") }
+                    } else {
+                        Text("No APK attached to this release.",
+                            style = MaterialTheme.typography.bodySmall, color = cs.onTertiaryContainer)
+                    }
+                }
+            }
+        }
     }
 }
 

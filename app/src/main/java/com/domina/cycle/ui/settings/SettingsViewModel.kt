@@ -8,7 +8,11 @@ import com.domina.cycle.backup.BackupManager
 import com.domina.cycle.data.prefs.SettingsRepository
 import com.domina.cycle.data.prefs.ThemePreference
 import com.domina.cycle.data.repository.DayLogRepository
+import com.domina.cycle.data.update.ReleaseInfo
+import com.domina.cycle.data.update.UpdateRepository
+import com.domina.cycle.data.update.UpdateStatus
 import com.domina.cycle.domain.reminders.ReminderSettings
+import com.domina.cycle.update.ApkUpdater
 import com.domina.cycle.reminders.ReminderManager
 import com.domina.cycle.report.ReportContent
 import com.domina.cycle.report.PdfReportRenderer
@@ -25,6 +29,8 @@ class SettingsViewModel @Inject constructor(
     private val reminderManager: ReminderManager,
     private val backupManager: BackupManager,
     private val dayLogRepository: DayLogRepository,
+    private val updateRepository: UpdateRepository,
+    val apkUpdater: ApkUpdater,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
     val theme: StateFlow<ThemePreference> =
@@ -53,6 +59,37 @@ class SettingsViewModel @Inject constructor(
         settings.birthDate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val heightCm: StateFlow<Int?> =
         settings.heightCm.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // --- app updates (on-demand) ---
+    sealed interface UpdateUiState {
+        data object Idle : UpdateUiState
+        data object Checking : UpdateUiState
+        data object UpToDate : UpdateUiState
+        data class Available(val release: ReleaseInfo) : UpdateUiState
+        data class Error(val message: String) : UpdateUiState
+    }
+
+    val appVersion: String = runCatching {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+    }.getOrNull() ?: "?"
+
+    private val _update = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
+    val update: StateFlow<UpdateUiState> = _update.asStateFlow()
+    val download: StateFlow<ApkUpdater.State> = apkUpdater.state
+
+    fun checkForUpdates() {
+        _update.value = UpdateUiState.Checking
+        viewModelScope.launch {
+            _update.value = when (val r = updateRepository.check(appVersion)) {
+                is UpdateStatus.UpToDate -> UpdateUiState.UpToDate
+                is UpdateStatus.Available -> UpdateUiState.Available(r.release)
+                is UpdateStatus.Error -> UpdateUiState.Error(r.message)
+            }
+        }
+    }
+
+    fun downloadUpdate(url: String) = apkUpdater.startUpdate(url)
+    fun dismissDownloadError() = apkUpdater.reset()
 
     fun setTheme(t: ThemePreference) { viewModelScope.launch { settings.setTheme(t) } }
 
